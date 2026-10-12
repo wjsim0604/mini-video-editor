@@ -4,7 +4,7 @@ import { exportFrameCount, exportFrameTiming } from '@/core/export/exportPlan.ts
 import type { Asset, Project } from '@/core/project.ts';
 import { US_PER_SECOND } from '@/core/time.ts';
 import { openVideoSource, type VideoSource } from '../media/videoSource.ts';
-import { drawLayers, type DrawableLayer } from '../render/drawLayers.ts';
+import { drawLayers, placement, type DrawableLayer } from '../render/drawLayers.ts';
 import { ClipFrameReader } from './ClipFrameReader.ts';
 import { CODEC_LABEL, pickExportCodec } from './codec.ts';
 
@@ -59,7 +59,7 @@ class ExportResources {
         bitmap = createImageBitmap(file);
         this.bitmaps.set(asset.id, bitmap);
       }
-      return { kind: 'image', bitmap: await bitmap };
+      return { kind: 'image', bitmap: await bitmap, ...placement(layer) };
     }
     if (asset.type !== 'video') {
       return null;
@@ -80,7 +80,7 @@ class ExportResources {
       this.readers.set(layer.clipId, reader);
     }
     const sample = await reader.frameAt(layer.sourceTime);
-    return sample ? { kind: 'video', sample } : null;
+    return sample ? { kind: 'video', sample, ...placement(layer) } : null;
   }
 
   /** 지금 화면에 없는 클립의 리더를 해제한다 (시간은 앞으로만 가므로 다시 쓰이지 않는다) */

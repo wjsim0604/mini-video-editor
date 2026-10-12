@@ -1,13 +1,16 @@
-import { Film, MousePointerClick, Type } from 'lucide-react';
+import { Film, MousePointerClick, RotateCcw, Type } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { PanelHeader } from '@/components/PanelHeader.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Slider } from '@/components/ui/slider.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { cn } from '@/lib/utils.ts';
+import { buildSetClipTransformCommand } from '@/core/commands/clipTransform.ts';
 import { buildUpdateOverlayCommand, type OverlayPatch } from '@/core/commands/overlay.ts';
-import type { TextOverlay } from '@/core/project.ts';
+import type { Clip, ClipTransform, TextOverlay } from '@/core/project.ts';
+import { defaultClipTransform } from '@/core/render/fit.ts';
 import { findItem } from '@/core/timelineItem.ts';
 import { formatTimecode } from '@/core/time.ts';
 import { projectStore, useProjectStore } from '@/store/projectStore.ts';
@@ -59,6 +62,7 @@ export function InspectorPanel() {
           </dl>
         )}
         {item?.kind === 'text' && <TextInspector overlay={item.overlay} />}
+        {item?.kind === 'clip' && <ClipInspector clip={item.clip} />}
       </div>
     </section>
   );
@@ -161,6 +165,93 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
           )}
         </Field>
       </div>
+    </div>
+  );
+}
+
+function updateClip(clipId: string, patch: Partial<ClipTransform> | null) {
+  const { project, dispatch } = projectStore.getState();
+  const command = buildSetClipTransformCommand(project, clipId, patch);
+  if (command) {
+    dispatch(command);
+  }
+}
+
+/** 클립 위치·크기 편집. 크기는 화면에 꽉 맞춘 크기 대비 % */
+function ClipInspector({ clip }: { clip: Clip }) {
+  const width = useProjectStore((state) => state.project.width);
+  const height = useProjectStore((state) => state.project.height);
+  const transform = clip.transform ?? defaultClipTransform({ width, height });
+  const percent = Math.round(transform.scale * 100);
+
+  return (
+    <div className="space-y-4">
+      <Field label="크기 (%)">
+        {({ labelId }) => (
+          <div className="flex items-center gap-3">
+            <Slider
+              aria-labelledby={labelId}
+              min={10}
+              max={400}
+              step={1}
+              value={[percent]}
+              className="min-w-0 flex-1"
+              onValueChange={([value]) => {
+                if (value !== undefined) {
+                  updateClip(clip.id, { scale: value / 100 });
+                }
+              }}
+            />
+            <NumberInput
+              label="크기 값"
+              className="w-16"
+              value={percent}
+              min={1}
+              onCommit={(value) => {
+                updateClip(clip.id, { scale: value / 100 });
+              }}
+            />
+          </div>
+        )}
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="X">
+          {({ id }) => (
+            <NumberInput
+              id={id}
+              label="X"
+              value={transform.x}
+              onCommit={(x) => {
+                updateClip(clip.id, { x, y: transform.y });
+              }}
+            />
+          )}
+        </Field>
+        <Field label="Y">
+          {({ id }) => (
+            <NumberInput
+              id={id}
+              label="Y"
+              value={transform.y}
+              onCommit={(y) => {
+                updateClip(clip.id, { x: transform.x, y });
+              }}
+            />
+          )}
+        </Field>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={!clip.transform}
+        onClick={() => {
+          updateClip(clip.id, null);
+        }}
+      >
+        <RotateCcw aria-hidden="true" />
+        원위치
+      </Button>
     </div>
   );
 }

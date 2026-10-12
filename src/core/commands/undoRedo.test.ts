@@ -4,6 +4,7 @@ import { buildAddTextCommand } from '../text.ts';
 import { createAddAssetCommand } from './addAsset.ts';
 import { createAddClipCommand } from './addClip.ts';
 import { mergeCommands, type Command } from './command.ts';
+import { buildSetClipTransformCommand } from './clipTransform.ts';
 import { createAddOverlayCommand, buildUpdateOverlayCommand } from './overlay.ts';
 import { buildMoveItemCommand } from './moveItem.ts';
 import { createRemoveItemCommand, createRemoveTrackCommand } from './removeItem.ts';
@@ -140,6 +141,15 @@ const cases: Case[] = [
   [
     '프리뷰 위치 이동',
     (p) => required(buildUpdateOverlayCommand(p, 'x', { style: { x: 1200, y: 300 } })),
+  ],
+  [
+    '클립 위치·크기 수정',
+    (p) => required(buildSetClipTransformCommand(p, 'img', { x: 400, y: 300, scale: 0.5 })),
+  ],
+  [
+    '클립 배치 초기화',
+    (p) => required(buildSetClipTransformCommand(p, 'img', null)),
+    (p) => required(buildSetClipTransformCommand(p, 'img', { x: 100 })).execute(p),
   ],
   ['클립 삭제', (p) => required(createRemoveItemCommand(p, 'c1'))],
   ['텍스트 삭제', (p) => required(createRemoveItemCommand(p, 'x'))],

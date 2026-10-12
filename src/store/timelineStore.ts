@@ -38,7 +38,7 @@ export interface TimelineState {
   itemDrag: ItemDragState | null;
   itemTrim: ItemTrimState | null;
   snapEnabled: boolean;
-  /** 프리뷰에서 텍스트를 끄는 중 (드래그 중에는 undo/redo를 무시한다) */
+  /** 프리뷰에서 텍스트·클립을 끄는 중 (드래그 중에는 undo/redo를 무시한다) */
   previewDragging: boolean;
   /** 드래그 중 스냅된 기준점 (세로 안내선 위치) */
   snapLine: Microseconds | null;

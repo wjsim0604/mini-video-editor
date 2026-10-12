@@ -3,7 +3,7 @@ import { containRect } from '@/core/render/fit.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
 import { PlaybackControls } from './PlaybackControls.tsx';
 import { playbackEngine, previewRenderer } from './playback.ts';
-import { TextOverlayHandles } from './TextOverlayHandles.tsx';
+import { PreviewItemHandles } from './PreviewItemHandles.tsx';
 
 /** 캔버스 주변 여백(px) */
 const PREVIEW_MARGIN = 12;
@@ -13,7 +13,7 @@ export function PreviewPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const outputWidth = useProjectStore((state) => state.project.width);
   const outputHeight = useProjectStore((state) => state.project.height);
-  // 캔버스의 화면 크기. 텍스트 조작 레이어가 같은 크기로 겹쳐진다
+  // 캔버스의 화면 크기. 요소 조작 레이어가 같은 크기로 겹쳐진다
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export function PreviewPanel() {
             aria-label="프리뷰 화면"
             className="block h-full w-full bg-black"
           />
-          <TextOverlayHandles width={displaySize.width} height={displaySize.height} />
+          <PreviewItemHandles width={displaySize.width} height={displaySize.height} />
         </div>
       </div>
       <PlaybackControls />

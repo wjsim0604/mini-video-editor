@@ -1,5 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
+import { createAddClipCommand } from '@/core/commands/addClip.ts';
+import { DEFAULT_VIDEO_TRACK_ID } from '@/core/project.ts';
 import { buildAddTextCommand } from '@/core/text.ts';
 import { projectStore } from '@/store/projectStore.ts';
 import { timelineStore } from '@/store/timelineStore.ts';
@@ -79,5 +82,36 @@ describe('InspectorPanel', () => {
     fireEvent.change(screen.getByLabelText('글자 크기 값'), { target: { value: '0' } });
 
     expect(overlay()?.style).toMatchObject({ fontSize: 72, x: 960 });
+  });
+
+  it('클립을 선택하면 위치·크기를 바꾸고 원위치로 되돌린다', () => {
+    const { dispatch } = projectStore.getState();
+    dispatch(
+      createAddAssetCommand({ id: 'img', type: 'image', name: 'photo.png', duration: 5_000_000 }),
+    );
+    dispatch(
+      createAddClipCommand({
+        id: 'c',
+        assetId: 'img',
+        trackId: DEFAULT_VIDEO_TRACK_ID,
+        start: 0,
+        inPoint: 0,
+        outPoint: 5_000_000,
+      }),
+    );
+    timelineStore.getState().selectItem('c');
+    render(<InspectorPanel />);
+    const clip = () => projectStore.getState().project.clips[0];
+
+    expect(screen.getByLabelText('X')).toHaveValue(960);
+    expect(screen.getByRole('button', { name: '원위치' })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('크기 값'), { target: { value: '50' } });
+    fireEvent.change(screen.getByLabelText('X'), { target: { value: '400' } });
+    expect(clip()?.transform).toEqual({ x: 400, y: 540, scale: 0.5 });
+
+    fireEvent.click(screen.getByRole('button', { name: '원위치' }));
+    expect(clip()).not.toHaveProperty('transform');
+    expect(screen.getByLabelText('크기 값')).toHaveValue(100);
   });
 });

@@ -48,6 +48,16 @@ describe('parsePersistedProject', () => {
     expect(parsePersistedProject(stored)).toEqual(project);
   });
 
+  it('클립의 위치·크기(transform)를 함께 읽는다', () => {
+    const base = sampleProject();
+    const project = {
+      ...base,
+      clips: base.clips.map((clip) => ({ ...clip, transform: { x: 100, y: 200, scale: 0.5 } })),
+    };
+
+    expect(parsePersistedProject(structuredClone(toPersisted(project, 1)))).toEqual(project);
+  });
+
   it('객체가 아니거나 버전이 없으면 null', () => {
     expect(parsePersistedProject(null)).toBeNull();
     expect(parsePersistedProject('project')).toBeNull();
@@ -113,6 +123,15 @@ describe('parsePersistedProject', () => {
         const overlay = (p['overlays'] as { style: Record<string, unknown> }[])[0];
         if (overlay) {
           overlay.style['fontSize'] = 0;
+        }
+      },
+    ],
+    [
+      '잘못된 클립 배율',
+      (p: Record<string, unknown>) => {
+        const clip = (p['clips'] as Record<string, unknown>[])[0];
+        if (clip) {
+          clip['transform'] = { x: 0, y: 0, scale: 0 };
         }
       },
     ],

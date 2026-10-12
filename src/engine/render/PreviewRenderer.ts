@@ -1,11 +1,11 @@
 import type { VideoSample } from 'mediabunny';
 import { findUpcomingClips, resolveLayers, type Layer } from '@/core/composition.ts';
-import type { Asset, Project, TextOverlay } from '@/core/project.ts';
+import type { Asset, ClipTransform, Project, TextOverlay } from '@/core/project.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { FrameStream } from '../decode/FrameStream.ts';
 import type { MediaSources } from '../media/mediaSources.ts';
 import type { VideoSource } from '../media/videoSource.ts';
-import { drawLayers } from './drawLayers.ts';
+import { drawLayers, placement } from './drawLayers.ts';
 
 /** PlaybackEngine이 사용하는 렌더러 인터페이스. 테스트에서는 가짜 구현으로 대체한다. */
 export interface FrameRenderer {
@@ -32,8 +32,14 @@ export interface RenderStats {
 type ClipLayer = Extract<Layer, { kind: 'clip' }>;
 
 type Drawable =
-  | { kind: 'video'; id: string; sample: VideoSample; frameTime: Microseconds }
-  | { kind: 'image'; id: string; bitmap: ImageBitmap }
+  | {
+      kind: 'video';
+      id: string;
+      sample: VideoSample;
+      frameTime: Microseconds;
+      transform?: ClipTransform;
+    }
+  | { kind: 'image'; id: string; bitmap: ImageBitmap; transform?: ClipTransform }
   | { kind: 'text'; id: string; overlay: TextOverlay };
 
 interface StreamEntry {
@@ -150,13 +156,20 @@ export class PreviewRenderer implements FrameRenderer {
         kind: 'image',
         id: layer.clipId,
         bitmap: await this.sources.loadImage(asset.id),
+        ...placement(layer),
       };
     }
     if (asset?.type === 'video') {
       const source = await this.sources.loadVideo(asset.id);
       const sample = await source.getSample(layer.sourceTime);
       return sample
-        ? { kind: 'video', id: layer.clipId, sample, frameTime: source.toSourceTime(sample) }
+        ? {
+            kind: 'video',
+            id: layer.clipId,
+            sample,
+            frameTime: source.toSourceTime(sample),
+            ...placement(layer),
+          }
         : null;
     }
     return null;
@@ -165,7 +178,7 @@ export class PreviewRenderer implements FrameRenderer {
   private peekFrame(asset: Asset | undefined, layer: ClipLayer): Drawable | null {
     if (asset?.type === 'image') {
       const bitmap = this.sources.peekImage(asset.id);
-      return bitmap ? { kind: 'image', id: layer.clipId, bitmap } : null;
+      return bitmap ? { kind: 'image', id: layer.clipId, bitmap, ...placement(layer) } : null;
     }
     if (asset?.type === 'video') {
       const entry = this.streams.get(layer.clipId);
@@ -176,6 +189,7 @@ export class PreviewRenderer implements FrameRenderer {
             id: layer.clipId,
             sample,
             frameTime: entry.source.toSourceTime(sample),
+            ...placement(layer),
           }
         : null;
     }

@@ -10,6 +10,16 @@ export interface Asset {
   height?: number;
 }
 
+/**
+ * 클립의 화면 배치. (x, y)는 중심 위치로 출력 해상도 기준 px (텍스트와 같은 규칙),
+ * scale은 화면에 꽉 맞춘(contain) 크기에 곱하는 배율.
+ */
+export interface ClipTransform {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 /** 타임라인 위에 놓인 조각 */
 export interface Clip {
   id: string;
@@ -18,6 +28,8 @@ export interface Clip {
   start: Microseconds; // 타임라인상 시작 위치
   inPoint: Microseconds; // 원본에서 사용 시작 지점
   outPoint: Microseconds; // 원본에서 사용 끝 지점
+  /** 없으면 화면 가운데에 꽉 맞춘다 (기본 배치) */
+  transform?: ClipTransform;
 }
 
 export interface TextOverlay {

@@ -61,6 +61,17 @@ function isAsset(value: unknown): value is Asset {
   );
 }
 
+/** 없거나(기본 배치) 유효한 위치·크기 */
+function isOptionalTransform(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (isRecord(value) &&
+      isFiniteNumber(value['x']) &&
+      isFiniteNumber(value['y']) &&
+      isPositive(value['scale']))
+  );
+}
+
 function isClip(value: unknown): value is Clip {
   return (
     isRecord(value) &&
@@ -70,7 +81,8 @@ function isClip(value: unknown): value is Clip {
     isTime(value['start']) &&
     isTime(value['inPoint']) &&
     isTime(value['outPoint']) &&
-    value['outPoint'] > value['inPoint']
+    value['outPoint'] > value['inPoint'] &&
+    isOptionalTransform(value['transform'])
   );
 }
 

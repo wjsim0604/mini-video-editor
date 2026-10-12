@@ -39,6 +39,15 @@ describe('resolveLayers', () => {
     ]);
   });
 
+  it('클립의 위치·크기를 레이어에 담는다', () => {
+    const transform = { x: 100, y: 200, scale: 0.5 };
+    const project = makeProject([{ ...makeClip('a', 'v1', 0, 0, S), transform }]);
+
+    expect(resolveLayers(project, 0)).toEqual([
+      { kind: 'clip', clipId: 'a', assetId: 'asset-a', trackId: 'v1', sourceTime: 0, transform },
+    ]);
+  });
+
   it('클립 구간은 [start, end)이다', () => {
     const project = makeProject([
       makeClip('a', 'v1', 0, 0, 2 * S),

@@ -1,5 +1,5 @@
 import { clipEnd, isClipActiveAtTime } from './clip.ts';
-import type { Clip, Project, TextOverlay } from './project.ts';
+import type { Clip, ClipTransform, Project, TextOverlay } from './project.ts';
 import type { Microseconds } from './time.ts';
 
 /** 특정 시각에 프리뷰에 그려야 할 하나의 레이어 */
@@ -11,6 +11,8 @@ export type Layer =
       trackId: string;
       /** 원본 에셋 기준 시각 */
       sourceTime: Microseconds;
+      /** 없으면 기본 배치 */
+      transform?: ClipTransform;
     }
   | { kind: 'text'; overlay: TextOverlay; trackId: string };
 
@@ -40,6 +42,7 @@ export function resolveLayers(project: Project, time: Microseconds): Layer[] {
       assetId: clip.assetId,
       trackId: clip.trackId,
       sourceTime: clip.inPoint + (time - clip.start),
+      ...(clip.transform ? { transform: clip.transform } : {}),
     }));
   const textLayers: Layer[] = project.overlays
     .filter(
