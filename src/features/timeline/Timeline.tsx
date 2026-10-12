@@ -1,7 +1,7 @@
 import type { PointerEvent } from 'react';
 import { projectDuration } from '@/core/composition.ts';
 import { pxToUs, usToPx } from '@/core/timeline/coords.ts';
-import { US_PER_SECOND } from '@/core/time.ts';
+import { quantizeToFrame, US_PER_SECOND } from '@/core/time.ts';
 import { sortTracksForDisplay, trackLabels } from '@/core/track.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
@@ -9,6 +9,7 @@ import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
 import { NEW_TRACK_ZONE_HEIGHT, RULER_HEIGHT, TRACK_HEIGHT } from './layout.ts';
 import { NewTrackZone } from './NewTrackZone.tsx';
 import { Playhead } from './Playhead.tsx';
+import { SnapLine } from './SnapLine.tsx';
 import { TimelineToolbar } from './TimelineToolbar.tsx';
 import { TimeRuler } from './TimeRuler.tsx';
 import { TrackRow } from './TrackRow.tsx';
@@ -30,7 +31,10 @@ export function Timeline() {
       return;
     }
     const rect = event.currentTarget.getBoundingClientRect();
-    playbackEngine.seek(pxToUs(event.clientX - rect.left, pxPerSecond));
+    // 탐색 위치도 프레임 경계로 맞춰, 그 위치에서 자른 클립 경계가 프레임 중간에 걸리지 않게 한다
+    playbackEngine.seek(
+      quantizeToFrame(pxToUs(event.clientX - rect.left, pxPerSecond), project.fps),
+    );
     timelineStore.getState().selectClip(null);
   };
 
@@ -75,6 +79,7 @@ export function Timeline() {
                 pxPerSecond={pxPerSecond}
               />
             ))}
+            <SnapLine pxPerSecond={pxPerSecond} />
             <Playhead pxPerSecond={pxPerSecond} />
           </div>
         </div>

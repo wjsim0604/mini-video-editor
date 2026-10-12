@@ -34,10 +34,15 @@ export interface TimelineState {
   selectedClipId: string | null;
   clipDrag: ClipDragState | null;
   clipTrim: ClipTrimState | null;
+  snapEnabled: boolean;
+  /** 드래그 중 스냅된 기준점 (세로 안내선 위치) */
+  snapLine: Microseconds | null;
   setDraggingAssetId: (assetId: string | null) => void;
   selectClip: (clipId: string | null) => void;
   setClipDrag: (drag: ClipDragState | null) => void;
   setClipTrim: (trim: ClipTrimState | null) => void;
+  toggleSnap: () => void;
+  setSnapLine: (time: Microseconds | null) => void;
 }
 
 export function createTimelineStore() {
@@ -47,6 +52,8 @@ export function createTimelineStore() {
     selectedClipId: null,
     clipDrag: null,
     clipTrim: null,
+    snapEnabled: true,
+    snapLine: null,
     setDraggingAssetId: (assetId) => {
       set({ draggingAssetId: assetId });
     },
@@ -58,6 +65,12 @@ export function createTimelineStore() {
     },
     setClipTrim: (trim) => {
       set({ clipTrim: trim });
+    },
+    toggleSnap: () => {
+      set((state) => ({ snapEnabled: !state.snapEnabled }));
+    },
+    setSnapLine: (time) => {
+      set({ snapLine: time });
     },
   }));
 }

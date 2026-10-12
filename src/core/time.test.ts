@@ -3,6 +3,7 @@ import {
   formatDuration,
   formatTimecode,
   frameToUs,
+  quantizeToFrame,
   secondsToUs,
   usToFrame,
   usToSeconds,
@@ -75,5 +76,20 @@ describe('formatDuration', () => {
   it('음수나 유한하지 않은 값은 거부한다', () => {
     expect(() => formatDuration(-1)).toThrow(RangeError);
     expect(() => formatDuration(Number.POSITIVE_INFINITY)).toThrow(RangeError);
+  });
+});
+
+describe('quantizeToFrame', () => {
+  it('가장 가까운 프레임 경계로 반올림한다', () => {
+    expect(quantizeToFrame(2_020_000, 30)).toBe(2_033_333);
+    expect(quantizeToFrame(2_010_000, 30)).toBe(2_000_000);
+    expect(quantizeToFrame(-10_000, 30)).toBe(0);
+  });
+
+  it.each([24, 25, 30, 60, 29.97])('%s fps에서 이미 프레임 경계인 값은 그대로 둔다', (fps) => {
+    for (let frame = 0; frame <= 3_000; frame++) {
+      const boundary = frameToUs(frame, fps);
+      expect(quantizeToFrame(boundary, fps)).toBe(boundary);
+    }
   });
 });

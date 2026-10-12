@@ -34,5 +34,11 @@ projectStore.subscribe((state, previous) => {
 
 if (import.meta.env.DEV) {
   // 개발 중 재생 품질(늦은 프레임 수 등)을 콘솔/E2E에서 확인하기 위한 디버그 핸들
-  Object.assign(window, { __preview: { stats: previewRenderer.stats, engine: playbackEngine } });
+  Object.assign(window, {
+    __preview: {
+      stats: previewRenderer.stats,
+      engine: playbackEngine,
+      project: () => projectStore.getState().project,
+    },
+  });
 }

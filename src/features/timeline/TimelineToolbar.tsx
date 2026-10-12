@@ -7,6 +7,7 @@ import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
 export function TimelineToolbar() {
   const project = useProjectStore((state) => state.project);
   const selectedClipId = useTimelineStore((state) => state.selectedClipId);
+  const snapEnabled = useTimelineStore((state) => state.snapEnabled);
   // currentTime은 재생 중 매 프레임 바뀌지만, 자를 수 있는지 여부(boolean)가 바뀔 때만 리렌더된다
   const canSplit = usePlaybackStore(
     (state) => findSplitTargets(project, state.currentTime, selectedClipId).length > 0,
@@ -49,6 +50,28 @@ export function TimelineToolbar() {
           <path d="M5.5 5.5L14 12M5.5 10.5L14 4" />
         </svg>
         자르기
+      </button>
+      <div aria-hidden="true" className="mx-1 h-4 w-px bg-neutral-800" />
+      <button
+        type="button"
+        aria-pressed={snapEnabled}
+        title="스냅 켜기/끄기 (드래그 중 Alt를 누르면 일시 해제)"
+        className={`flex h-6 items-center gap-1 rounded px-2 text-xs hover:bg-neutral-800 ${
+          snapEnabled ? 'text-amber-300' : 'text-neutral-500'
+        }`}
+        onClick={() => {
+          timelineStore.getState().toggleSnap();
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          className="h-3.5 w-3.5 fill-none stroke-current"
+          strokeWidth="1.5"
+        >
+          <path d="M3 2v6a5 5 0 0 0 10 0V2M3 5h3M10 5h3" />
+        </svg>
+        스냅
       </button>
     </div>
   );

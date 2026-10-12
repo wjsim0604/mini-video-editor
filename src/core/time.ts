@@ -61,3 +61,9 @@ export function formatDuration(us: Microseconds): string {
     ? `${String(hours)}:${String(minutes).padStart(2, '0')}:${seconds}`
     : `${String(minutes)}:${seconds}`;
 }
+
+/** 가장 가까운 프레임 경계(frameToUs 기준)로 반올림한다. 편집 위치를 프레임 단위로 맞출 때 사용한다. */
+export function quantizeToFrame(us: Microseconds, fps: number): Microseconds {
+  // Math.round(-0.3)은 -0이므로 0으로 정규화한다
+  return frameToUs(Math.round((us * fps) / US_PER_SECOND), fps) || 0;
+}

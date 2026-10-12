@@ -402,4 +402,107 @@ describe('Timeline', () => {
       expect(screen.getByRole('button', { name: '자르기' })).toBeEnabled();
     });
   });
+
+  describe('스냅과 프레임 정렬', () => {
+    // 50px/s에서 스냅 거리 8px = 0.16초
+    const ROW_Y = 80;
+
+    function startDrag(name: string, fromX: number) {
+      const element = screen.getByRole('listitem', { name: `클립 ${name}` });
+      fireEvent.pointerDown(element, { button: 0, pointerId: 3, clientX: fromX, clientY: ROW_Y });
+      return {
+        move: (toX: number, altKey = false) => {
+          fireEvent.pointerMove(element, { pointerId: 3, clientX: toX, clientY: ROW_Y, altKey });
+        },
+        drop: (toX: number) => {
+          fireEvent.pointerUp(element, { pointerId: 3, clientX: toX, clientY: ROW_Y });
+        },
+      };
+    }
+
+    function startOf(assetId: string) {
+      return projectStore.getState().project.clips.find((clip) => clip.assetId === assetId)?.start;
+    }
+
+    beforeEach(() => {
+      dragAssetToTrack('intro.mp4', 0); // 0s~4s
+      dragAssetToTrack('outro.mp4', 10 * PX_PER_SECOND); // 10s~12s
+    });
+
+    it('클립을 옮기면 다른 클립 경계에 붙고 안내선을 보여준다', () => {
+      // outro를 왼쪽으로 295px → 시작 4.1s, intro 끝(4s)에서 0.1s 거리
+      const drag = startDrag('outro.mp4', 510);
+      drag.move(215);
+
+      expect(screen.getByTestId('snap-line')).toHaveStyle({ left: '200px' });
+
+      drag.drop(215);
+      expect(startOf('outro')).toBe(4_000_000);
+      expect(screen.queryByTestId('snap-line')).not.toBeInTheDocument();
+    });
+
+    it('Alt를 누른 채 끌면 스냅하지 않고 프레임 경계에만 맞춘다', () => {
+      const drag = startDrag('outro.mp4', 510);
+      drag.move(215, true);
+
+      expect(screen.queryByTestId('snap-line')).not.toBeInTheDocument();
+      drag.drop(215);
+      expect(startOf('outro')).toBe(4_100_000);
+    });
+
+    it('툴바에서 스냅을 끄면 붙지 않는다', () => {
+      const toggle = screen.getByRole('button', { name: '스냅' });
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+      const drag = startDrag('outro.mp4', 510);
+      drag.move(215);
+      drag.drop(215);
+
+      expect(startOf('outro')).toBe(4_100_000);
+    });
+
+    it('스냅되지 않은 위치는 가장 가까운 프레임 경계로 맞춘다', () => {
+      fireEvent.click(screen.getByRole('button', { name: '스냅' }));
+
+      // outro를 왼쪽으로 299px → 4.02s → 30fps 프레임 경계 4.033333s
+      const drag = startDrag('outro.mp4', 510);
+      drag.move(211);
+      drag.drop(211);
+
+      expect(startOf('outro')).toBe(4_033_333);
+    });
+
+    it('트리밍하는 끝이 플레이헤드에 붙는다', () => {
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 150 });
+      const handle = screen.getByRole('separator', { name: 'intro.mp4 끝 지점 트리밍' });
+
+      // 끝(4s)을 3.06s로 → 플레이헤드(3s)에 붙는다
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 4, clientX: 200, clientY: ROW_Y });
+      fireEvent.pointerMove(handle, { pointerId: 4, clientX: 153, clientY: ROW_Y });
+      expect(screen.getByTestId('snap-line')).toHaveStyle({ left: '150px' });
+      fireEvent.pointerUp(handle, { pointerId: 4, clientX: 153, clientY: ROW_Y });
+
+      expect(projectStore.getState().project.clips[0]?.outPoint).toBe(3_000_000);
+    });
+
+    it('에셋을 놓을 때도 클립 경계에 붙는다', () => {
+      const dataTransfer = createDataTransfer();
+      const zone = screen.getByRole('region', { name: '새 트랙' });
+
+      fireEvent.dragStart(screen.getByRole('listitem', { name: 'outro.mp4' }), { dataTransfer });
+      fireEvent.dragOver(zone, { dataTransfer, clientX: 205 });
+      expect(screen.getByTestId('snap-line')).toHaveStyle({ left: '200px' });
+      fireEvent.drop(zone, { dataTransfer, clientX: 205 });
+
+      expect(projectStore.getState().project.clips.at(-1)?.start).toBe(4_000_000);
+    });
+
+    it('타임라인 클릭 탐색 위치도 프레임 경계로 맞춘다', () => {
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 101 });
+
+      // 2.02s → 2.033333s
+      expect(playbackStore.getState().currentTime).toBe(2_033_333);
+    });
+  });
 });

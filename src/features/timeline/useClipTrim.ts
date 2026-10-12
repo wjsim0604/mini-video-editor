@@ -7,12 +7,14 @@ import { resolveTrim, timingOf, type ClipTiming, type TrimEdge } from '@/core/ti
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { projectStore } from '@/store/projectStore.ts';
 import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
+import { createPositionerForEdit, type EditPositioner } from './editPosition.ts';
 
 interface TrimSession {
   pointerId: number;
   edge: TrimEdge;
   startX: number;
   moved: boolean;
+  positioner: EditPositioner;
 }
 
 function withTiming(project: Project, clipId: string, timing: ClipTiming): Project {
@@ -41,6 +43,7 @@ export function useClipTrim(clip: Clip, pxPerSecond: number) {
       if (event.key === 'Escape') {
         session.current = null;
         timelineStore.getState().setClipTrim(null);
+        timelineStore.getState().setSnapLine(null);
         playbackEngine.endPreview();
       }
     };
@@ -60,7 +63,13 @@ export function useClipTrim(clip: Clip, pxPerSecond: number) {
       // 클립 이동과 타임라인 탐색으로 전파되지 않게 한다
       event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
-      session.current = { pointerId: event.pointerId, edge, startX: event.clientX, moved: false };
+      session.current = {
+        pointerId: event.pointerId,
+        edge,
+        startX: event.clientX,
+        moved: false,
+        positioner: createPositionerForEdit(clip.id),
+      };
     },
     onPointerMove: (event: PointerEvent<HTMLElement>) => {
       const current = session.current;
@@ -72,15 +81,21 @@ export function useClipTrim(clip: Clip, pxPerSecond: number) {
       const { project } = projectStore.getState();
       const edgeTime = current.edge === 'start' ? clip.start : clipEnd(clip);
       const desired = edgeTime + pxToUs(event.clientX - current.startX, pxPerSecond);
-      const timing = resolveTrim(project, clip.id, current.edge, desired);
+      // 끌고 있는 끝을 스냅(Alt를 누르면 해제)한 뒤 원본 범위·이웃 클립 제한을 적용한다
+      const position = current.positioner([desired], event.altKey);
+      const timing = resolveTrim(project, clip.id, current.edge, desired + position.delta);
       if (!timing) {
         return;
       }
-      timelineStore.getState().setClipTrim({ clipId: clip.id, edge: current.edge, timing });
+      const timeline = timelineStore.getState();
+      timeline.setClipTrim({ clipId: clip.id, edge: current.edge, timing });
+
+      const trimmedEnd = timing.start + (timing.outPoint - timing.inPoint);
+      const resultEdge = current.edge === 'start' ? timing.start : trimmedEnd;
+      timeline.setSnapLine(position.snappedTo === resultEdge ? resultEdge : null);
 
       // 프리뷰에 잘리는 지점의 프레임을 보여준다 (끝 쪽은 마지막으로 보이는 프레임)
       const draft = withTiming(project, clip.id, timing);
-      const trimmedEnd = timing.start + (timing.outPoint - timing.inPoint);
       playbackEngine.previewFrame(draft, current.edge === 'start' ? timing.start : trimmedEnd - 1);
     },
     onPointerUp: (event: PointerEvent<HTMLElement>) => {
@@ -93,6 +108,7 @@ export function useClipTrim(clip: Clip, pxPerSecond: number) {
       const timeline = timelineStore.getState();
       const pending = timeline.clipTrim;
       timeline.setClipTrim(null);
+      timeline.setSnapLine(null);
       playbackEngine.endPreview();
       timeline.selectClip(clip.id);
       if (!current.moved || pending?.clipId !== clip.id) {
@@ -113,6 +129,7 @@ export function useClipTrim(clip: Clip, pxPerSecond: number) {
     onPointerCancel: () => {
       session.current = null;
       timelineStore.getState().setClipTrim(null);
+      timelineStore.getState().setSnapLine(null);
       playbackEngine.endPreview();
     },
   };
