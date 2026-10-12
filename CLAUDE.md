@@ -35,8 +35,11 @@
 - **모든 편집은 커맨드로**: 상태를 바꾸는 편집 동작은 반드시 커맨드를 `projectStore.dispatch(command)`로 실행한다. 컴포넌트에서 store를 직접 수정하지 않는다. (undo/redo 구현의 기반)
   - 커맨드는 Project를 받아 새 Project를 반환하는 순수 함수: `Command { label; execute(project): Project; undo(project): Project }` (`core/commands/`)
   - React·Zustand 없이 테스트할 수 있고, Zustand의 불변 업데이트와 맞물린다
+  - 같은 대상의 연속 편집(텍스트 입력, 슬라이더 등)은 커맨드에 `mergeKey`를 주어 1초 안에 이어지면 히스토리 한 항목으로 합친다 (undo 한 번에 처음 값으로)
 - **직렬화 불가 데이터는 Project 밖에**: 원본 `File`, 썸네일 object URL 등은 `mediaStore`에 assetId로 보관한다. Project는 IndexedDB에 그대로 저장할 수 있는 순수 데이터만 갖는다.
 - **UI와 로직 분리**: 타임라인 계산(스냅, 충돌 검사, 좌표↔시간 변환)은 React와 무관한 순수 함수로 `core/`에 두고 테스트한다.
+- **타임라인 항목 일반화**: 클립과 텍스트는 `core/timelineItem.ts`의 `TimelineItem { id, trackId, start, end }`로 다룬다. 배치·이동·트리밍·자르기·스냅·가상화는 모두 이 형태로 계산한다. 영상·이미지 클립은 비디오 트랙에만, 텍스트는 텍스트 트랙에만 놓인다.
+- **텍스트 좌표**: `style.x`, `style.y`는 텍스트 **중심**의 위치, `fontSize`와 함께 출력 해상도 기준 px. 여러 줄(`\n`) 가운데 정렬, 시스템 한글 글꼴 + 글자 크기 비례 외곽선으로 그린다 (`engine/render/textLayout.ts`, 그리기와 프리뷰 클릭 판정이 같은 측정을 쓴다).
 - **이미지 클립 타이밍**: 이미지는 원본 길이 제한이 없고 어느 시각이나 같은 그림이므로, 트리밍·자르기 후 항상 `inPoint = 0`, `outPoint = 길이`로 정규화한다. 최소 클립 길이는 1프레임.
 - **편집 위치 보정**: 드롭·이동·트리밍 위치는 스냅(모든 트랙의 클립 경계, 플레이헤드, 0 / 화면 기준 8px / Alt로 일시 해제) → 스냅되지 않으면 프레임 경계로 반올림 → 빈자리·이웃 제한 순으로 결정한다. 클릭 탐색 위치도 프레임 경계로 맞춘다 (재생 중 시각은 제외).
 - **트랙 순서**: `order`가 큰 트랙이 프리뷰에서 위에 그려지고, 타임라인에서도 위에 표시한다 (V1이 맨 아래). 새 트랙은 맨 위에 추가된다.
@@ -74,8 +77,8 @@ interface TextOverlay {
   trackId: string;
   start: Microseconds;
   duration: Microseconds;
-  text: string;
-  style: { fontSize: number; color: string; x: number; y: number };
+  text: string;               // 여러 줄 허용 (\n)
+  style: { fontSize: number; color: string; x: number; y: number }; // 출력 해상도 기준 px, (x, y)는 중심
 }
 
 interface Track {
@@ -140,7 +143,7 @@ docs/
 
 ### 3주차 — 텍스트와 편집 히스토리
 
-- [ ] 텍스트 오버레이 추가, 인스펙터에서 스타일 수정, 프리뷰에서 위치 드래그
+- [x] 텍스트 오버레이 추가, 인스펙터에서 스타일 수정, 프리뷰에서 위치 드래그
 - [ ] undo/redo (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z), 커맨드 패턴 기반
 - [ ] 키보드 단축키 (스페이스 재생, Delete 삭제, S 자르기)
 - [ ] IndexedDB 자동 저장 및 새로고침 후 복원
