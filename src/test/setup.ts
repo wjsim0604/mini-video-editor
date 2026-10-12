@@ -20,6 +20,17 @@ if (!('DragEvent' in window)) {
 // 렌더러는 컨텍스트가 없으면 그리기를 건너뛰므로 null을 반환하도록 고정한다.
 HTMLCanvasElement.prototype.getContext = () => null;
 
+// jsdom에는 pointer capture가 없다. 클립 드래그 테스트를 위해 아무것도 하지 않는 구현을 둔다.
+for (const [name, value] of [
+  ['setPointerCapture', () => undefined],
+  ['releasePointerCapture', () => undefined],
+  ['hasPointerCapture', () => false],
+] as const) {
+  if (!(name in Element.prototype)) {
+    Object.defineProperty(Element.prototype, name, { value, configurable: true });
+  }
+}
+
 afterEach(() => {
   cleanup();
 });

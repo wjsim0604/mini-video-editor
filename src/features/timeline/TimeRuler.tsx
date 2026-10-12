@@ -1,6 +1,7 @@
 import { usToPx } from '@/core/timeline/coords.ts';
 import { formatRulerLabel, pickRulerStep } from '@/core/timeline/ruler.ts';
 import type { Microseconds } from '@/core/time.ts';
+import { RULER_HEIGHT } from './layout.ts';
 
 interface TimeRulerProps {
   duration: Microseconds;
@@ -15,7 +16,11 @@ export function TimeRuler({ duration, pxPerSecond }: TimeRulerProps) {
   }
 
   return (
-    <div aria-hidden="true" className="relative h-6 border-b border-neutral-800 select-none">
+    <div
+      aria-hidden="true"
+      className="relative border-b border-neutral-800 select-none"
+      style={{ height: RULER_HEIGHT }}
+    >
       {ticks.map((time) => (
         <span
           key={time}

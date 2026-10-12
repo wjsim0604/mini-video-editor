@@ -2,9 +2,12 @@ import type { PointerEvent } from 'react';
 import { projectDuration } from '@/core/composition.ts';
 import { pxToUs, usToPx } from '@/core/timeline/coords.ts';
 import { US_PER_SECOND } from '@/core/time.ts';
-import { useProjectStore } from '@/store/projectStore.ts';
-import { useTimelineStore } from '@/store/timelineStore.ts';
+import { sortTracksForDisplay, trackLabels } from '@/core/track.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
+import { useProjectStore } from '@/store/projectStore.ts';
+import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
+import { NEW_TRACK_ZONE_HEIGHT, RULER_HEIGHT, TRACK_HEIGHT } from './layout.ts';
+import { NewTrackZone } from './NewTrackZone.tsx';
 import { Playhead } from './Playhead.tsx';
 import { TimeRuler } from './TimeRuler.tsx';
 import { TrackRow } from './TrackRow.tsx';
@@ -16,44 +19,54 @@ export function Timeline() {
   const project = useProjectStore((state) => state.project);
   const pxPerSecond = useTimelineStore((state) => state.pxPerSecond);
 
-  const tracks = [...project.tracks].sort((a, b) => a.order - b.order);
+  const tracks = sortTracksForDisplay(project.tracks);
+  const labels = trackLabels(project.tracks);
   const contentDuration = projectDuration(project) + TRAILING_SPACE;
 
-  // 눈금이나 트랙을 클릭하면 그 시각으로 이동한다
+  // 빈 곳(눈금·트랙)을 클릭하면 그 시각으로 이동하고 선택을 해제한다. 클립 위 클릭은 클립이 처리한다.
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
       return;
     }
     const rect = event.currentTarget.getBoundingClientRect();
     playbackEngine.seek(pxToUs(event.clientX - rect.left, pxPerSecond));
+    timelineStore.getState().selectClip(null);
   };
 
   return (
-    <section aria-label="타임라인" className="col-span-3 flex min-h-0 border-t border-neutral-800">
-      <div className="w-14 shrink-0 border-r border-neutral-800">
-        <div className="h-6 border-b border-neutral-800" />
-        {tracks.map((track, index) => (
+    <section
+      aria-label="타임라인"
+      className="col-span-3 flex min-h-0 items-start overflow-y-auto border-t border-neutral-800"
+    >
+      {/* 헤더 열과 트랙이 함께 세로 스크롤되도록 같은 스크롤 컨테이너 안에 둔다 */}
+      <div className="sticky left-0 w-14 shrink-0 border-r border-neutral-800">
+        <div className="border-b border-neutral-800" style={{ height: RULER_HEIGHT }} />
+        <div className="border-b border-neutral-800" style={{ height: NEW_TRACK_ZONE_HEIGHT }} />
+        {tracks.map((track) => (
           <div
             key={track.id}
-            className="flex h-14 items-center justify-center border-b border-neutral-800 text-xs text-neutral-400"
+            className="flex items-center justify-center border-b border-neutral-800 text-xs text-neutral-400"
+            style={{ height: TRACK_HEIGHT }}
           >
-            {trackLabel(track.kind, index)}
+            {labels.get(track.id)}
           </div>
         ))}
       </div>
-      <div className="min-w-0 flex-1 overflow-x-auto">
+      <div className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div
+          data-timeline-content
           data-testid="timeline-content"
           className="relative min-w-full"
           style={{ width: usToPx(contentDuration, pxPerSecond) }}
           onPointerDown={handlePointerDown}
         >
           <TimeRuler duration={contentDuration} pxPerSecond={pxPerSecond} />
-          {tracks.map((track, index) => (
+          <NewTrackZone pxPerSecond={pxPerSecond} />
+          {tracks.map((track) => (
             <TrackRow
               key={track.id}
               track={track}
-              label={trackLabel(track.kind, index)}
+              label={labels.get(track.id) ?? ''}
               clips={project.clips.filter((clip) => clip.trackId === track.id)}
               assets={project.assets}
               pxPerSecond={pxPerSecond}
@@ -64,9 +77,4 @@ export function Timeline() {
       </div>
     </section>
   );
-}
-
-function trackLabel(kind: 'video' | 'text' | 'audio', index: number): string {
-  const prefix = { video: 'V', text: 'T', audio: 'A' }[kind];
-  return `${prefix}${String(index + 1)}`;
 }
