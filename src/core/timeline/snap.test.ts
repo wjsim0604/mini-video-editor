@@ -31,7 +31,7 @@ describe('collectSnapTargets', () => {
   it('편집 중인 클립의 경계는 제외한다', () => {
     const project = makeProject([makeClip('a', 'v1', 2 * S, 3 * S)]);
 
-    expect(collectSnapTargets(project, { playhead: 0, excludeClipId: 'a' })).toEqual([0]);
+    expect(collectSnapTargets(project, { playhead: 0, excludeItemId: 'a' })).toEqual([0]);
   });
 });
 

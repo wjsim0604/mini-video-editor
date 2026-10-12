@@ -2,6 +2,7 @@ import { useMemo, useRef, type PointerEvent } from 'react';
 import { projectDuration } from '@/core/composition.ts';
 import { pxToUs, usToPx } from '@/core/timeline/coords.ts';
 import { quantizeToFrame, US_PER_SECOND } from '@/core/time.ts';
+import { timelineItems } from '@/core/timelineItem.ts';
 import { sortTracksForDisplay, trackLabels } from '@/core/track.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
@@ -32,12 +33,13 @@ export function Timeline() {
   const tracks = sortTracksForDisplay(project.tracks);
   const labels = trackLabels(project.tracks);
   const contentDuration = projectDuration(project) + TRAILING_SPACE;
+  const items = timelineItems(project);
   const assetsById = useMemo(
     () => new Map(project.assets.map((asset) => [asset.id, asset])),
     [project.assets],
   );
 
-  // 빈 곳(눈금·트랙)을 클릭하면 그 시각으로 이동하고 선택을 해제한다. 클립 위 클릭은 클립이 처리한다.
+  // 빈 곳(눈금·트랙)을 클릭하면 그 시각으로 이동하고 선택을 해제한다. 항목 위 클릭은 항목이 처리한다.
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
       return;
@@ -47,7 +49,7 @@ export function Timeline() {
     playbackEngine.seek(
       quantizeToFrame(pxToUs(event.clientX - rect.left, pxPerSecond), project.fps),
     );
-    timelineStore.getState().selectClip(null);
+    timelineStore.getState().selectItem(null);
   };
 
   return (
@@ -91,7 +93,7 @@ export function Timeline() {
                 key={track.id}
                 track={track}
                 label={labels.get(track.id) ?? ''}
-                clips={project.clips.filter((clip) => clip.trackId === track.id)}
+                items={items.filter((item) => item.trackId === track.id)}
                 assetsById={assetsById}
                 pxPerSecond={pxPerSecond}
                 range={range}

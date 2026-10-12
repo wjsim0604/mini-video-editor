@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Clip } from '../project.ts';
+import type { Span } from '../timelineItem.ts';
 import { findFreePlacement } from './placement.ts';
 
 const S = 1_000_000;
 
-function makeClip(start: number, duration: number): Clip {
-  return {
-    id: `clip-${String(start)}`,
-    assetId: 'a',
-    trackId: 't',
-    start,
-    inPoint: 0,
-    outPoint: duration,
-  };
+function makeClip(start: number, duration: number): Span {
+  return { start, end: start + duration };
 }
 
 describe('findFreePlacement', () => {
@@ -75,8 +68,7 @@ describe('findFreePlacement', () => {
     for (let desired = 0; desired <= 15 * S; desired += S / 4) {
       const start = findFreePlacement(clips, desired, duration);
       for (const clip of clips) {
-        const end = clip.start + clip.outPoint - clip.inPoint;
-        expect(start < end && clip.start < start + duration).toBe(false);
+        expect(start < clip.end && clip.start < start + duration).toBe(false);
       }
     }
   });

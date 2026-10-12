@@ -16,10 +16,10 @@ interface NewTrackZoneProps {
 /** 맨 위 트랙 위의 영역. 여기에 클립이나 에셋을 놓으면 새 트랙이 만들어진다. */
 export function NewTrackZone({ pxPerSecond }: NewTrackZoneProps) {
   const movePreview = useTimelineStore((state) =>
-    state.clipDrag?.target.trackId === null ? state.clipDrag : null,
+    state.itemDrag?.target.trackId === null ? state.itemDrag : null,
   );
   const isDraggingSomething = useTimelineStore(
-    (state) => state.clipDrag !== null || state.draggingAssetId !== null,
+    (state) => state.itemDrag !== null || state.draggingAssetId !== null,
   );
   const assetDrop = useAssetDropTarget({
     clips: [],

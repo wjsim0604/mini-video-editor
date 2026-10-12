@@ -1,9 +1,8 @@
 import { useEffect, useRef, type PointerEvent } from 'react';
-import { clipDuration } from '@/core/clip.ts';
-import { buildMoveClipCommand } from '@/core/commands/moveClip.ts';
-import type { Clip } from '@/core/project.ts';
+import { buildMoveItemCommand } from '@/core/commands/moveItem.ts';
 import { pxToUs } from '@/core/timeline/coords.ts';
-import { resolveClipMove } from '@/core/timeline/moveClip.ts';
+import { resolveItemMove } from '@/core/timeline/moveItem.ts';
+import { spanDuration, type TimelineItem } from '@/core/timelineItem.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { sortTracksForDisplay } from '@/core/track.ts';
 import { projectStore } from '@/store/projectStore.ts';
@@ -19,7 +18,7 @@ interface DragSession {
   pointerId: number;
   startX: number;
   startY: number;
-  /** 포인터가 클립 시작에서 얼마나 떨어진 곳을 잡았는지 (스크롤·줌과 무관하게 시간으로 보관) */
+  /** 포인터가 항목 시작에서 얼마나 떨어진 곳을 잡았는지 (스크롤·줌과 무관하게 시간으로 보관) */
   grabOffset: Microseconds;
   /** 마지막 포인터 상태. 자동 스크롤 중 포인터가 멈춰 있어도 위치를 다시 계산하는 데 쓴다 */
   pointer: { clientX: number; clientY: number; altKey: boolean };
@@ -38,19 +37,19 @@ function pointerTime(content: HTMLElement, clientX: number): Microseconds {
 }
 
 /**
- * 클립을 포인터로 끌어 옮긴다. 드래그 중에는 timelineStore.clipDrag만 갱신하고
- * (끌고 있는 클립과 미리보기만 다시 그려진다), 놓을 때 커맨드를 한 번 실행한다.
+ * 항목(클립·텍스트)을 포인터로 끌어 옮긴다. 드래그 중에는 timelineStore.itemDrag만 갱신하고
+ * (끌고 있는 항목과 미리보기만 다시 그려진다), 놓을 때 커맨드를 한 번 실행한다.
  * 포인터가 가장자리에 가면 타임라인을 자동 스크롤한다.
  */
-export function useClipDrag(clip: Clip) {
+export function useItemDrag(item: TimelineItem) {
   const session = useRef<DragSession | null>(null);
-  const isDragging = useTimelineStore((state) => state.clipDrag?.clipId === clip.id);
+  const isDragging = useTimelineStore((state) => state.itemDrag?.itemId === item.id);
 
   const endSession = () => {
     session.current?.autoScroller?.stop();
     session.current = null;
     const timeline = timelineStore.getState();
-    timeline.setClipDrag(null);
+    timeline.setItemDrag(null);
     timeline.setSnapLine(null);
   };
 
@@ -62,7 +61,7 @@ export function useClipDrag(clip: Clip) {
       if (event.key === 'Escape') {
         session.current?.autoScroller?.stop();
         session.current = null;
-        timelineStore.getState().setClipDrag(null);
+        timelineStore.getState().setItemDrag(null);
         timelineStore.getState().setSnapLine(null);
       }
     };
@@ -81,12 +80,12 @@ export function useClipDrag(clip: Clip) {
     const targetTrackId = row.kind === 'track' ? (tracks[row.index]?.id ?? null) : null;
 
     // 시작·끝 중 기준점에 가까운 쪽으로 스냅하고(Alt를 누르면 해제), 그다음 빈자리 배치를 적용한다
-    const duration = clipDuration(clip);
+    const duration = spanDuration(item);
     const desiredStart = pointerTime(current.content, clientX) - current.grabOffset;
     const position = current.positioner?.([desiredStart, desiredStart + duration], altKey);
-    const target = resolveClipMove(
+    const target = resolveItemMove(
       project,
-      clip.id,
+      item.id,
       desiredStart + (position?.delta ?? 0),
       targetTrackId,
     );
@@ -94,7 +93,7 @@ export function useClipDrag(clip: Clip) {
       return;
     }
     const timeline = timelineStore.getState();
-    timeline.setClipDrag({ clipId: clip.id, duration, target });
+    timeline.setItemDrag({ itemId: item.id, kind: item.kind, duration, target });
     // 빈자리 배치로 위치가 바뀌었으면 스냅이 적용되지 않은 것이므로 안내선을 숨긴다
     const snapped = position?.snappedTo;
     timeline.setSnapLine(
@@ -119,7 +118,7 @@ export function useClipDrag(clip: Clip) {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      grabOffset: pointerTime(content, event.clientX) - clip.start,
+      grabOffset: pointerTime(content, event.clientX) - item.start,
       pointer: { clientX: event.clientX, clientY: event.clientY, altKey: event.altKey },
       dragging: false,
       content,
@@ -141,7 +140,7 @@ export function useClipDrag(clip: Clip) {
         return;
       }
       current.dragging = true;
-      current.positioner = createPositionerForEdit(clip.id);
+      current.positioner = createPositionerForEdit(item.id);
       const scroller = current.content.closest<HTMLElement>('[data-timeline-scroll]');
       current.autoScroller = scroller
         ? createAutoScroller(scroller, () => {
@@ -159,21 +158,21 @@ export function useClipDrag(clip: Clip) {
       return;
     }
     const timeline = timelineStore.getState();
-    const drag = timeline.clipDrag;
+    const drag = timeline.itemDrag;
     endSession();
 
     if (!current.dragging) {
-      timeline.selectClip(clip.id);
+      timeline.selectItem(item.id);
       return;
     }
-    if (drag?.clipId !== clip.id) {
+    if (drag?.itemId !== item.id) {
       return;
     }
     const { project, dispatch } = projectStore.getState();
-    const command = buildMoveClipCommand(project, clip.id, drag.target, () => crypto.randomUUID());
+    const command = buildMoveItemCommand(project, item.id, drag.target, () => crypto.randomUUID());
     if (command) {
       dispatch(command);
-      timeline.selectClip(clip.id);
+      timeline.selectItem(item.id);
     }
   };
 

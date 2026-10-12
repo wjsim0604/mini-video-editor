@@ -1,5 +1,4 @@
-import { clipEnd } from '../clip.ts';
-import type { Clip } from '../project.ts';
+import type { Span } from '../timelineItem.ts';
 import type { Microseconds } from '../time.ts';
 import { pxToUs } from './coords.ts';
 
@@ -37,9 +36,9 @@ export function sameRange(a: TimeRange, b: TimeRange): boolean {
   return a.start === b.start && a.end === b.end;
 }
 
-/** 클립 구간 [start, end)가 범위와 겹치는지 */
-export function clipInRange(clip: Clip, range: TimeRange): boolean {
-  return clip.start < range.end && clipEnd(clip) > range.start;
+/** 항목 구간 [start, end)가 범위와 겹치는지 */
+export function spanInRange(span: Span, range: TimeRange): boolean {
+  return span.start < range.end && span.end > range.start;
 }
 
 /**

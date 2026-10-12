@@ -1,4 +1,4 @@
-import { buildSplitCommand } from '@/core/commands/splitClip.ts';
+import { buildSplitCommand } from '@/core/commands/splitItem.ts';
 import { findSplitTargets } from '@/core/timeline/split.ts';
 import { sliderToZoom, stepZoom, zoomToSlider } from '@/core/timeline/zoom.ts';
 import { playbackStore, usePlaybackStore } from '@/store/playbackStore.ts';
@@ -16,11 +16,11 @@ const ICON_BUTTON_CLASS =
 
 export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
   const project = useProjectStore((state) => state.project);
-  const selectedClipId = useTimelineStore((state) => state.selectedClipId);
+  const selectedItemId = useTimelineStore((state) => state.selectedItemId);
   const snapEnabled = useTimelineStore((state) => state.snapEnabled);
   // currentTime은 재생 중 매 프레임 바뀌지만, 자를 수 있는지 여부(boolean)가 바뀔 때만 리렌더된다
   const canSplit = usePlaybackStore(
-    (state) => findSplitTargets(project, state.currentTime, selectedClipId).length > 0,
+    (state) => findSplitTargets(project, state.currentTime, selectedItemId).length > 0,
   );
 
   const handleSplit = () => {
@@ -28,7 +28,7 @@ export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
     const command = buildSplitCommand(
       latest,
       playbackStore.getState().currentTime,
-      timelineStore.getState().selectedClipId,
+      timelineStore.getState().selectedItemId,
       () => crypto.randomUUID(),
     );
     if (command) {

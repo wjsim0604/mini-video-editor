@@ -1,8 +1,9 @@
 import { useState, type DragEvent } from 'react';
-import type { Asset, Clip } from '@/core/project.ts';
+import type { Asset } from '@/core/project.ts';
 import { pxToUs } from '@/core/timeline/coords.ts';
 import { findFreePlacement } from '@/core/timeline/placement.ts';
 import { autoScrollSpeed } from '@/core/timeline/viewport.ts';
+import type { Span } from '@/core/timelineItem.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { projectStore } from '@/store/projectStore.ts';
 import { ASSET_DRAG_TYPE, timelineStore } from '@/store/timelineStore.ts';
@@ -14,8 +15,8 @@ export interface DropPreview {
 }
 
 interface AssetDropTargetOptions {
-  /** 이 대상에 이미 놓여 있는 클립 (겹치지 않는 자리 계산용) */
-  clips: readonly Clip[];
+  /** 이 대상에 이미 놓여 있는 항목 구간 (겹치지 않는 자리 계산용) */
+  clips: readonly Span[];
   pxPerSecond: number;
   onDrop: (asset: Asset, start: Microseconds) => void;
 }

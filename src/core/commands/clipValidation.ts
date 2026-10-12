@@ -1,5 +1,5 @@
-import { clipsOverlap } from '../clip.ts';
 import type { Clip, Project } from '../project.ts';
+import { itemsOnTrack, spansOverlap, trackKindFor, type TimelineItem } from '../timelineItem.ts';
 
 /** 클립의 시간 값이 정수 μs이고 구간이 유효한지 검사한다 */
 export function assertValidClipTiming(clip: Clip): void {
@@ -12,17 +12,33 @@ export function assertValidClipTiming(clip: Clip): void {
   }
 }
 
-/** 클립이 놓일 트랙이 존재하고, 같은 트랙의 다른 클립과 겹치지 않는지 검사한다 */
-export function assertClipPlaceable(project: Project, clip: Clip): void {
-  if (!project.tracks.some((track) => track.id === clip.trackId)) {
-    throw new Error(`Track not found: ${clip.trackId}`);
+/** 항목 구간이 정수 μs이고 0 이상, 길이가 양수인지 검사한다 */
+export function assertValidSpan(item: Pick<TimelineItem, 'id' | 'start' | 'end'>): void {
+  if (!Number.isSafeInteger(item.start) || !Number.isSafeInteger(item.end)) {
+    throw new RangeError(`Timing must be integer microseconds: ${item.id}`);
   }
-  const overlapping = project.clips.find(
-    (existing) =>
-      existing.id !== clip.id && existing.trackId === clip.trackId && clipsOverlap(existing, clip),
+  if (item.start < 0 || item.end <= item.start) {
+    throw new RangeError(`Invalid range: ${item.id}`);
+  }
+}
+
+/** 항목이 놓일 트랙이 존재하고 종류가 맞으며, 같은 트랙의 다른 항목과 겹치지 않는지 검사한다 */
+export function assertItemPlaceable(
+  project: Project,
+  item: Pick<TimelineItem, 'id' | 'kind' | 'trackId' | 'start' | 'end'>,
+): void {
+  const track = project.tracks.find((candidate) => candidate.id === item.trackId);
+  if (!track) {
+    throw new Error(`Track not found: ${item.trackId}`);
+  }
+  if (track.kind !== trackKindFor(item)) {
+    throw new Error(`Cannot place ${item.kind} on ${track.kind} track: ${item.id}`);
+  }
+  const overlapping = itemsOnTrack(project, item.trackId, item.id).find((other) =>
+    spansOverlap(other, item),
   );
   if (overlapping) {
-    throw new Error(`Clip overlaps with ${overlapping.id}`);
+    throw new Error(`Item overlaps with ${overlapping.id}`);
   }
 }
 

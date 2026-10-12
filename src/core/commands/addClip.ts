@@ -1,5 +1,6 @@
 import type { Clip } from '../project.ts';
-import { assertClipPlaceable, assertValidClipTiming } from './clipValidation.ts';
+import { clipItem } from '../timelineItem.ts';
+import { assertItemPlaceable, assertValidClipTiming } from './clipValidation.ts';
 import type { Command } from './command.ts';
 
 export function createAddClipCommand(clip: Clip): Command {
@@ -13,7 +14,7 @@ export function createAddClipCommand(clip: Clip): Command {
       if (project.clips.some((existing) => existing.id === clip.id)) {
         throw new Error(`Clip already exists: ${clip.id}`);
       }
-      assertClipPlaceable(project, clip);
+      assertItemPlaceable(project, clipItem(clip));
       return { ...project, clips: [...project.clips, clip] };
     },
     undo(project) {

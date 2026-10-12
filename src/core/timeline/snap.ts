@@ -1,20 +1,20 @@
-import { clipEnd } from '../clip.ts';
 import type { Project } from '../project.ts';
+import { timelineItems } from '../timelineItem.ts';
 import { quantizeToFrame, type Microseconds } from '../time.ts';
 
 /**
- * 스냅 기준점: 모든 트랙의 클립 경계 + 플레이헤드 + 타임라인 시작(0). 정렬·중복 제거된 배열.
+ * 스냅 기준점: 모든 트랙의 항목(클립·텍스트) 경계 + 플레이헤드 + 타임라인 시작(0). 정렬·중복 제거된 배열.
  * 드래그 시작 시 한 번만 만들고, 이동 중에는 findSnap의 이진 탐색으로 재사용한다.
  */
 export function collectSnapTargets(
   project: Project,
-  options: { playhead: Microseconds; excludeClipId?: string | null },
+  options: { playhead: Microseconds; excludeItemId?: string | null },
 ): Microseconds[] {
   const times = new Set<Microseconds>([0, options.playhead]);
-  for (const clip of project.clips) {
-    if (clip.id !== options.excludeClipId) {
-      times.add(clip.start);
-      times.add(clipEnd(clip));
+  for (const item of timelineItems(project)) {
+    if (item.id !== options.excludeItemId) {
+      times.add(item.start);
+      times.add(item.end);
     }
   }
   return [...times].sort((a, b) => a - b);

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Clip } from '../project.ts';
-import { autoScrollSpeed, clipInRange, renderTimeRange, UNBOUNDED_RANGE } from './viewport.ts';
+import { autoScrollSpeed, renderTimeRange, spanInRange, UNBOUNDED_RANGE } from './viewport.ts';
 
 const S = 1_000_000;
 
@@ -34,21 +33,14 @@ describe('renderTimeRange', () => {
   });
 });
 
-describe('clipInRange', () => {
-  const clip: Clip = {
-    id: 'c',
-    assetId: 'a',
-    trackId: 't',
-    start: 10 * S,
-    inPoint: 0,
-    outPoint: 5 * S,
-  };
+describe('spanInRange', () => {
+  const clip = { start: 10 * S, end: 15 * S };
 
   it('범위와 겹치면 true, 맞닿기만 하면 false', () => {
-    expect(clipInRange(clip, { start: 0, end: 11 * S })).toBe(true);
-    expect(clipInRange(clip, { start: 14 * S, end: 20 * S })).toBe(true);
-    expect(clipInRange(clip, { start: 0, end: 10 * S })).toBe(false);
-    expect(clipInRange(clip, { start: 15 * S, end: 20 * S })).toBe(false);
+    expect(spanInRange(clip, { start: 0, end: 11 * S })).toBe(true);
+    expect(spanInRange(clip, { start: 14 * S, end: 20 * S })).toBe(true);
+    expect(spanInRange(clip, { start: 0, end: 10 * S })).toBe(false);
+    expect(spanInRange(clip, { start: 15 * S, end: 20 * S })).toBe(false);
   });
 });
 

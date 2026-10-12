@@ -11,13 +11,13 @@ export const SNAP_DISTANCE_PX = 8;
  * 현재 상태(프로젝트, 플레이헤드, 줌, 스냅 설정)로 편집 위치 보정기를 만든다.
  * 기준점 수집·정렬은 여기서 한 번만 하므로 드래그 시작 시 만들어 두고 재사용한다.
  */
-export function createPositionerForEdit(excludeClipId: string | null) {
+export function createPositionerForEdit(excludeItemId: string | null) {
   const { project } = projectStore.getState();
   const { pxPerSecond, snapEnabled } = timelineStore.getState();
   return createEditPositioner({
     targets: collectSnapTargets(project, {
       playhead: playbackStore.getState().currentTime,
-      excludeClipId,
+      excludeItemId,
     }),
     threshold: pxToUs(SNAP_DISTANCE_PX, pxPerSecond),
     fps: project.fps,

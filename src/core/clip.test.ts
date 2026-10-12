@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clipDuration, clipEnd, clipsOverlap, createClipFromAsset } from './clip.ts';
+import { clipDuration, clipEnd, createClipFromAsset } from './clip.ts';
 import type { Asset, Clip } from './project.ts';
 
 function makeClip(start: number, duration: number, inPoint = 0): Clip {
@@ -19,18 +19,6 @@ describe('clipDuration / clipEnd', () => {
 
     expect(clipDuration(clip)).toBe(2_000_000);
     expect(clipEnd(clip)).toBe(3_000_000);
-  });
-});
-
-describe('clipsOverlap', () => {
-  it('구간이 겹치면 true', () => {
-    expect(clipsOverlap(makeClip(0, 2_000_000), makeClip(1_000_000, 2_000_000))).toBe(true);
-    expect(clipsOverlap(makeClip(0, 5_000_000), makeClip(1_000_000, 1_000_000))).toBe(true);
-  });
-
-  it('끝과 시작이 맞닿거나 떨어져 있으면 false', () => {
-    expect(clipsOverlap(makeClip(0, 1_000_000), makeClip(1_000_000, 1_000_000))).toBe(false);
-    expect(clipsOverlap(makeClip(0, 1_000_000), makeClip(3_000_000, 1_000_000))).toBe(false);
   });
 });
 
