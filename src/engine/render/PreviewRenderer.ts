@@ -1,12 +1,11 @@
 import type { VideoSample } from 'mediabunny';
 import { findUpcomingClips, resolveLayers, type Layer } from '@/core/composition.ts';
 import type { Asset, Project, TextOverlay } from '@/core/project.ts';
-import { containRect } from '@/core/render/fit.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { FrameStream } from '../decode/FrameStream.ts';
 import type { MediaSources } from '../media/mediaSources.ts';
 import type { VideoSource } from '../media/videoSource.ts';
-import { drawTextOverlay } from './textLayout.ts';
+import { drawLayers } from './drawLayers.ts';
 
 /** PlaybackEngine이 사용하는 렌더러 인터페이스. 테스트에서는 가짜 구현으로 대체한다. */
 export interface FrameRenderer {
@@ -243,24 +242,7 @@ export class PreviewRenderer implements FrameRenderer {
       return;
     }
 
-    context.fillStyle = '#000';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    for (const drawable of drawables) {
-      if (drawable.kind === 'video') {
-        drawable.sample.drawWithFit(context, { fit: 'contain' });
-      } else if (drawable.kind === 'text') {
-        // 텍스트 좌표·크기는 출력 해상도 기준이므로 캔버스 크기에 맞게 축소한다
-        drawTextOverlay(context, drawable.overlay, canvas.width / project.width);
-      } else {
-        const rect = containRect(
-          drawable.bitmap.width,
-          drawable.bitmap.height,
-          canvas.width,
-          canvas.height,
-        );
-        context.drawImage(drawable.bitmap, rect.x, rect.y, rect.width, rect.height);
-      }
-    }
+    drawLayers(context, drawables, project.width);
 
     this.stats.lastDrawn = {
       time,

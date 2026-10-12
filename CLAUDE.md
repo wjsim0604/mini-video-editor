@@ -18,7 +18,7 @@
 - 디코딩/인코딩: WebCodecs API
 - 디먹싱/디코딩 관리: mediabunny (MPL-2.0, 수정 없이 의존성으로 사용). 시간 단위가 초이므로 `engine/media/videoSource.ts` 경계에서 μs로 변환
   - 용량이 커서 동적 import로 첫 화면 번들에서 분리, 영상 컨테이너(MP4·MOV·WebM·MKV)만 등록
-- mp4 먹싱: mediabunny 사용 예정 (4주차 내보내기에서 최종 확인 받기)
+- mp4 먹싱·인코딩: mediabunny (`Output` + `Mp4OutputFormat` + `CanvasSource`). 코덱은 H.264 → VP9 → AV1 중 인코딩 가능한 첫 코덱, 영상만(소리 없음)
 - WebCodecs 미지원 브라우저 대응: ffmpeg.wasm (멀티스레드 사용 시 COOP/COEP 헤더 필요)
 - 로컬 저장: IndexedDB (idb 라이브러리)
 - 테스트: Vitest + Testing Library (핵심 로직), 필요 시 Playwright
@@ -56,6 +56,9 @@
   - 글자 키는 `key`가 영문자면 그대로, 아니면(한글 배열 'ㄴ' 등) `code`(`KeyS`)로 판단한다
   - 입력칸(텍스트·숫자·색상·select·contenteditable)에서는 undo/redo 외 단축키를 가로채지 않는다. 한글 조합 중·키 반복(undo/redo 제외)·드래그 중에는 무시한다
   - 툴바 버튼과 단축키는 `features/timeline/actions.ts`의 같은 함수를 쓴다
+- **내보내기**: `engine/export/exportVideo.ts`가 프레임마다 `resolveLayers` → `drawLayers`(프리뷰와 공용)로 출력 해상도 `OffscreenCanvas`에 그려 인코딩한다.
+  - 프리뷰는 늦은 프레임을 건너뛰지만 내보내기는 `ClipFrameReader`로 필요한 프레임을 기다린다 (클립마다 리더, 끝나면 해제)
+  - 시작 시점의 Project를 고정해 쓰고, 내보내는 동안 모달 뒤 편집기는 `inert`이며 단축키도 막는다. 취소는 `AbortController`
 - **트랙 순서**: `order`가 큰 트랙이 프리뷰에서 위에 그려지고, 타임라인에서도 위에 표시한다 (V1이 맨 아래). 새 트랙은 맨 위에 추가된다.
 - **드래그 중에는 Project를 바꾸지 않는다**: 드래그 중 상태는 `timelineStore`(화면 상태)에만 두고 미리보기를 그린다. 놓을 때 커맨드를 한 번 실행해 히스토리에 한 항목만 남긴다.
 - **성능**: 타임라인은 보이는 영역만 렌더링한다. 재생 루프는 `requestAnimationFrame` 기반, 재생 중 React 리렌더를 최소화한다.
@@ -166,7 +169,7 @@ docs/
 
 ### 4주차 — 내보내기와 마무리
 
-- [ ] WebCodecs로 mp4 내보내기, 진행률 표시, 취소
+- [x] WebCodecs로 mp4 내보내기, 진행률 표시, 취소
 - [ ] 미지원 브라우저 대응(ffmpeg.wasm) 또는 안내 메시지
 - [ ] Vercel 배포
 - [ ] README 정리: 데모 GIF, 아키텍처 다이어그램, 기술적 의사결정, 실행 방법
@@ -182,7 +185,7 @@ docs/
 ## MVP 범위 밖
 
 - 백엔드, 로그인, 클라우드 저장
-- 오디오 파형 편집, 다중 오디오 믹싱
+- 오디오 파형 편집, 다중 오디오 믹싱, 오디오 재생·내보내기 (내보내기는 영상만)
 - 모바일 레이아웃 (데스크톱 우선)
 
 ## 작업 규칙 (Claude에게)

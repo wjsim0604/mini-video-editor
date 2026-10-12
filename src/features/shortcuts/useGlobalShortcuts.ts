@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isExporting } from '@/features/export/exportStore.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { deleteSelection, splitAtPlayhead } from '@/features/timeline/actions.ts';
 import { projectStore } from '@/store/projectStore.ts';
@@ -39,7 +40,8 @@ function run(action: ShortcutAction): void {
 export function useGlobalShortcuts(): void {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.isComposing) {
+      // 한글 조합 중이거나 내보내는 중(모달)에는 단축키를 쓰지 않는다
+      if (event.isComposing || isExporting()) {
         return;
       }
       const action = resolveShortcut(event);
