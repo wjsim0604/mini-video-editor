@@ -40,12 +40,17 @@
   - undo 대상은 Project 편집뿐이다. 줌·스크롤·선택·스냅 설정·플레이헤드는 화면 상태라 undo 대상이 아니다
   - undo/redo 단축키(Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Ctrl+Y)는 입력칸에서도 앱 히스토리를 대상으로 하고, 드래그·트리밍 중에는 무시한다
   - 새 편집 커맨드를 만들면 `core/commands/undoRedo.test.ts`의 왕복 테스트 표에 추가한다
+  - 삭제 커맨드는 원래 배열 위치에 되돌린다. 빈 트랙만 지울 수 있고 마지막 비디오 트랙은 지울 수 없다 (`canRemoveTrack`)
 - **직렬화 불가 데이터는 Project 밖에**: 원본 `File`, 썸네일 object URL 등은 `mediaStore`에 assetId로 보관한다. Project는 IndexedDB에 그대로 저장할 수 있는 순수 데이터만 갖는다.
 - **UI와 로직 분리**: 타임라인 계산(스냅, 충돌 검사, 좌표↔시간 변환)은 React와 무관한 순수 함수로 `core/`에 두고 테스트한다.
 - **타임라인 항목 일반화**: 클립과 텍스트는 `core/timelineItem.ts`의 `TimelineItem { id, trackId, start, end }`로 다룬다. 배치·이동·트리밍·자르기·스냅·가상화는 모두 이 형태로 계산한다. 영상·이미지 클립은 비디오 트랙에만, 텍스트는 텍스트 트랙에만 놓인다.
 - **텍스트 좌표**: `style.x`, `style.y`는 텍스트 **중심**의 위치, `fontSize`와 함께 출력 해상도 기준 px. 여러 줄(`\n`) 가운데 정렬, 시스템 한글 글꼴 + 글자 크기 비례 외곽선으로 그린다 (`engine/render/textLayout.ts`, 그리기와 프리뷰 클릭 판정이 같은 측정을 쓴다).
 - **이미지 클립 타이밍**: 이미지는 원본 길이 제한이 없고 어느 시각이나 같은 그림이므로, 트리밍·자르기 후 항상 `inPoint = 0`, `outPoint = 길이`로 정규화한다. 최소 클립 길이는 1프레임.
 - **편집 위치 보정**: 드롭·이동·트리밍 위치는 스냅(모든 트랙의 클립 경계, 플레이헤드, 0 / 화면 기준 8px / Alt로 일시 해제) → 스냅되지 않으면 프레임 경계로 반올림 → 빈자리·이웃 제한 순으로 결정한다. 클릭 탐색 위치도 프레임 경계로 맞춘다 (재생 중 시각은 제외).
+- **키보드 단축키**: `features/shortcuts/keymap.ts`의 `resolveShortcut`(순수 함수)로 키 → 동작을 정한다. Space 재생, Delete/Backspace 삭제, S 자르기, Ctrl/Cmd+Z·Shift+Ctrl/Cmd+Z·Ctrl+Y undo/redo.
+  - 글자 키는 `key`가 영문자면 그대로, 아니면(한글 배열 'ㄴ' 등) `code`(`KeyS`)로 판단한다
+  - 입력칸(텍스트·숫자·색상·select·contenteditable)에서는 undo/redo 외 단축키를 가로채지 않는다. 한글 조합 중·키 반복(undo/redo 제외)·드래그 중에는 무시한다
+  - 툴바 버튼과 단축키는 `features/timeline/actions.ts`의 같은 함수를 쓴다
 - **트랙 순서**: `order`가 큰 트랙이 프리뷰에서 위에 그려지고, 타임라인에서도 위에 표시한다 (V1이 맨 아래). 새 트랙은 맨 위에 추가된다.
 - **드래그 중에는 Project를 바꾸지 않는다**: 드래그 중 상태는 `timelineStore`(화면 상태)에만 두고 미리보기를 그린다. 놓을 때 커맨드를 한 번 실행해 히스토리에 한 항목만 남긴다.
 - **성능**: 타임라인은 보이는 영역만 렌더링한다. 재생 루프는 `requestAnimationFrame` 기반, 재생 중 React 리렌더를 최소화한다.
@@ -149,7 +154,7 @@ docs/
 
 - [x] 텍스트 오버레이 추가, 인스펙터에서 스타일 수정, 프리뷰에서 위치 드래그
 - [x] undo/redo (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z), 커맨드 패턴 기반
-- [ ] 키보드 단축키 (스페이스 재생, Delete 삭제, S 자르기)
+- [x] 키보드 단축키 (스페이스 재생, Delete 삭제, S 자르기)
 - [ ] IndexedDB 자동 저장 및 새로고침 후 복원
 
 **완료 기준**: 모든 편집 동작이 undo/redo 가능하다

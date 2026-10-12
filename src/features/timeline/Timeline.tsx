@@ -7,12 +7,13 @@ import { sortTracksForDisplay, trackLabels } from '@/core/track.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
 import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
-import { NEW_TRACK_ZONE_HEIGHT, RULER_HEIGHT, TRACK_HEIGHT } from './layout.ts';
+import { NEW_TRACK_ZONE_HEIGHT, RULER_HEIGHT } from './layout.ts';
 import { NewTrackZone } from './NewTrackZone.tsx';
 import { Playhead } from './Playhead.tsx';
 import { SnapLine } from './SnapLine.tsx';
 import { TimelineToolbar } from './TimelineToolbar.tsx';
 import { TimeRuler } from './TimeRuler.tsx';
+import { TrackHeader } from './TrackHeader.tsx';
 import { TrackRow } from './TrackRow.tsx';
 import { useTimelineViewport } from './useTimelineViewport.ts';
 import { useWheelZoom } from './useWheelZoom.ts';
@@ -64,13 +65,7 @@ export function Timeline() {
           <div className="border-b border-neutral-800" style={{ height: RULER_HEIGHT }} />
           <div className="border-b border-neutral-800" style={{ height: NEW_TRACK_ZONE_HEIGHT }} />
           {tracks.map((track) => (
-            <div
-              key={track.id}
-              className="flex items-center justify-center border-b border-neutral-800 text-xs text-neutral-400"
-              style={{ height: TRACK_HEIGHT }}
-            >
-              {labels.get(track.id)}
-            </div>
+            <TrackHeader key={track.id} trackId={track.id} label={labels.get(track.id) ?? ''} />
           ))}
         </div>
         <div

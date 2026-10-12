@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import { createAddClipCommand } from '@/core/commands/addClip.ts';
 import { DEFAULT_VIDEO_TRACK_ID } from '@/core/project.ts';
@@ -129,6 +129,151 @@ describe('App', () => {
       // 놓은 뒤에는 이동이 되돌아간다
       pressUndo();
       expect(project().clips[0]?.start).toBe(0);
+    });
+  });
+
+  describe('키보드 단축키', () => {
+    function addClip(start = 0) {
+      const { dispatch, project: current } = projectStore.getState();
+      if (!current.assets.some((asset) => asset.id === 'a')) {
+        dispatch(
+          createAddAssetCommand({ id: 'a', type: 'video', name: 'a.mp4', duration: 4_000_000 }),
+        );
+      }
+      dispatch(
+        createAddClipCommand({
+          id: `c-${String(start)}`,
+          assetId: 'a',
+          trackId: DEFAULT_VIDEO_TRACK_ID,
+          start,
+          inPoint: 0,
+          outPoint: 4_000_000,
+        }),
+      );
+    }
+
+    function press(
+      key: string,
+      init: Partial<KeyboardEventInit> = {},
+      target: Element | Window = window,
+    ) {
+      fireEvent.keyDown(target, { key, ...init });
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('Space로 재생/일시정지를 토글하고, 키를 누르고 있어 반복되는 입력은 무시한다', () => {
+      addClip();
+      const toggle = vi.spyOn(playbackEngine, 'toggle').mockImplementation(() => undefined);
+      render(<App />);
+
+      press(' ', { code: 'Space' });
+      press(' ', { code: 'Space', repeat: true });
+
+      expect(toggle).toHaveBeenCalledOnce();
+    });
+
+    it('포커스된 버튼에서 Space를 눌러도 버튼 기본 동작 대신 재생을 토글한다', () => {
+      addClip();
+      const toggle = vi.spyOn(playbackEngine, 'toggle').mockImplementation(() => undefined);
+      render(<App />);
+      const button = screen.getByRole('button', { name: '텍스트' });
+      button.focus();
+
+      const notPrevented = fireEvent.keyDown(button, { key: ' ', code: 'Space' });
+
+      expect(notPrevented).toBe(false);
+      expect(toggle).toHaveBeenCalledOnce();
+    });
+
+    it('S로 플레이헤드 위치에서 자른다 (한글 입력 상태의 ㄴ도 같다)', () => {
+      addClip();
+      render(<App />);
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 50 });
+
+      press('s', { code: 'KeyS' });
+      expect(project().clips).toHaveLength(2);
+
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 150 });
+      press('ㄴ', { code: 'KeyS' });
+      expect(project().clips).toHaveLength(3);
+    });
+
+    it('Delete·Backspace로 선택한 항목을 지우고 undo로 되돌린다', () => {
+      addClip(0);
+      addClip(5_000_000);
+      render(<App />);
+      const [first, second] = screen.getAllByRole('listitem', { name: '클립 a.mp4' });
+      if (!first || !second) {
+        throw new Error('clips expected');
+      }
+
+      fireEvent.pointerDown(first, { button: 0, pointerId: 1, clientX: 10, clientY: 80 });
+      fireEvent.pointerUp(first, { pointerId: 1, clientX: 10, clientY: 80 });
+      press('Delete');
+      expect(project().clips.map((clip) => clip.id)).toEqual(['c-5000000']);
+      expect(timelineStore.getState().selectedItemId).toBeNull();
+
+      fireEvent.pointerDown(second, { button: 0, pointerId: 2, clientX: 260, clientY: 80 });
+      fireEvent.pointerUp(second, { pointerId: 2, clientX: 260, clientY: 80 });
+      press('Backspace');
+      expect(project().clips).toEqual([]);
+
+      pressUndo();
+      pressUndo();
+      expect(project().clips.map((clip) => clip.id)).toEqual(['c-0', 'c-5000000']);
+    });
+
+    it('선택한 텍스트도 Delete로 지운다', () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+
+      press('Delete');
+
+      expect(project().overlays).toEqual([]);
+    });
+
+    it('입력칸에서는 띄어쓰기·s·Backspace가 단축키로 동작하지 않는다', () => {
+      addClip();
+      const toggle = vi.spyOn(playbackEngine, 'toggle').mockImplementation(() => undefined);
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+      const textarea = screen.getByLabelText('내용');
+
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 50 });
+      timelineStore.getState().selectItem(project().overlays[0]?.id ?? null);
+      press(' ', { code: 'Space' }, textarea);
+      press('s', { code: 'KeyS' }, textarea);
+      press('Backspace', {}, textarea);
+
+      expect(toggle).not.toHaveBeenCalled();
+      expect(project().clips).toHaveLength(1);
+      expect(project().overlays).toHaveLength(1);
+    });
+
+    it('한글 조합 중인 입력은 무시한다', () => {
+      addClip();
+      render(<App />);
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 50 });
+
+      press('Process', { code: 'KeyS', isComposing: true });
+
+      expect(project().clips).toHaveLength(1);
+    });
+
+    it('빈 트랙은 헤더의 삭제 버튼으로 지우고, 마지막 비디오 트랙은 지울 수 없다', () => {
+      render(<App />);
+      expect(screen.queryByRole('button', { name: '트랙 V1 삭제' })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+      press('Delete');
+      fireEvent.click(screen.getByRole('button', { name: '트랙 T1 삭제' }));
+
+      expect(project().tracks.map((track) => track.kind)).toEqual(['video']);
+      pressUndo();
+      expect(project().tracks.map((track) => track.kind)).toEqual(['video', 'text']);
     });
   });
 });

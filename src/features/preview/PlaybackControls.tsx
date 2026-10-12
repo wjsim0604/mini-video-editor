@@ -31,6 +31,7 @@ export function PlaybackControls() {
       <button
         type="button"
         aria-label={isPlaying ? '일시정지' : '재생'}
+        title={isPlaying ? '일시정지 (Space)' : '재생 (Space)'}
         disabled={duration === 0}
         className="flex h-7 w-7 items-center justify-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40"
         onClick={() => {

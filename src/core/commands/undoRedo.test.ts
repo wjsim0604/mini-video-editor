@@ -6,6 +6,7 @@ import { createAddClipCommand } from './addClip.ts';
 import { mergeCommands, type Command } from './command.ts';
 import { createAddOverlayCommand, buildUpdateOverlayCommand } from './overlay.ts';
 import { buildMoveItemCommand } from './moveItem.ts';
+import { createRemoveItemCommand, createRemoveTrackCommand } from './removeItem.ts';
 import { createSetItemSpanCommand } from './setItemSpan.ts';
 import { buildSplitCommand } from './splitItem.ts';
 
@@ -57,7 +58,10 @@ function required(command: Command | null): Command {
 let nextId = 0;
 const createId = () => `new-${String(++nextId)}`;
 
-const cases: [string, (project: Project) => Command][] = [
+/** [이름, 커맨드 만들기, (선택) 실행 전 상태 준비] */
+type Case = [string, (project: Project) => Command, ((project: Project) => Project)?];
+
+const cases: Case[] = [
   [
     '에셋 추가',
     () => createAddAssetCommand({ id: 'a2', type: 'image', name: 'b.png', duration: 5 * S }),
@@ -136,6 +140,13 @@ const cases: [string, (project: Project) => Command][] = [
     '프리뷰 위치 이동',
     (p) => required(buildUpdateOverlayCommand(p, 'x', { style: { x: 1200, y: 300 } })),
   ],
+  ['클립 삭제', (p) => required(createRemoveItemCommand(p, 'c1'))],
+  ['텍스트 삭제', (p) => required(createRemoveItemCommand(p, 'x'))],
+  [
+    '빈 트랙 삭제',
+    (p) => required(createRemoveTrackCommand(p, 'v2')),
+    (p) => required(createRemoveItemCommand(p, 'img')).execute(p),
+  ],
   [
     '연속 입력(합쳐진 커맨드)',
     (p) => {
@@ -147,8 +158,8 @@ const cases: [string, (project: Project) => Command][] = [
 ];
 
 describe('모든 편집 커맨드 undo/redo 왕복', () => {
-  it.each(cases)('%s', (_, build) => {
-    const before = baseProject();
+  it.each(cases)('%s', (_, build, prepare) => {
+    const before = prepare ? prepare(baseProject()) : baseProject();
     const command = build(before);
 
     const executed = command.execute(before);

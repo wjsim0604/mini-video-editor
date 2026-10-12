@@ -1,4 +1,3 @@
-import { buildSplitCommand } from '@/core/commands/splitItem.ts';
 import { buildAddTextCommand } from '@/core/text.ts';
 import { quantizeToFrame } from '@/core/time.ts';
 import { findSplitTargets } from '@/core/timeline/split.ts';
@@ -6,6 +5,7 @@ import { sliderToZoom, stepZoom, zoomToSlider } from '@/core/timeline/zoom.ts';
 import { playbackStore, usePlaybackStore } from '@/store/playbackStore.ts';
 import { projectStore, useProjectStore } from '@/store/projectStore.ts';
 import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
+import { splitAtPlayhead } from './actions.ts';
 import type { ZoomController } from './useZoomController.ts';
 
 interface TimelineToolbarProps {
@@ -33,19 +33,6 @@ export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
     timelineStore.getState().selectItem(overlayId);
   };
 
-  const handleSplit = () => {
-    const { project: latest, dispatch } = projectStore.getState();
-    const command = buildSplitCommand(
-      latest,
-      playbackStore.getState().currentTime,
-      timelineStore.getState().selectedItemId,
-      () => crypto.randomUUID(),
-    );
-    if (command) {
-      dispatch(command);
-    }
-  };
-
   return (
     <div
       role="toolbar"
@@ -70,10 +57,12 @@ export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
       </button>
       <button
         type="button"
-        title="플레이헤드 위치에서 자르기"
+        title="플레이헤드 위치에서 자르기 (S)"
         disabled={!canSplit}
         className="flex h-6 items-center gap-1 rounded px-2 text-xs text-neutral-200 hover:bg-neutral-800 disabled:text-neutral-600 disabled:hover:bg-transparent"
-        onClick={handleSplit}
+        onClick={() => {
+          splitAtPlayhead();
+        }}
       >
         <svg
           aria-hidden="true"
