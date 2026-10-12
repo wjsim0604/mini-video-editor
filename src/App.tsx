@@ -1,0 +1,17 @@
+function App() {
+  return (
+    <div className="flex h-screen flex-col bg-neutral-950 text-neutral-100">
+      <header className="flex h-12 items-center border-b border-neutral-800 px-4">
+        <h1 className="text-sm font-semibold">Mini Video Editor</h1>
+      </header>
+      <main className="grid min-h-0 flex-1 grid-cols-[240px_1fr_240px] grid-rows-[1fr_240px]">
+        <section aria-label="에셋" className="border-r border-neutral-800" />
+        <section aria-label="프리뷰" className="bg-black" />
+        <section aria-label="인스펙터" className="border-l border-neutral-800" />
+        <section aria-label="타임라인" className="col-span-3 border-t border-neutral-800" />
+      </main>
+    </div>
+  );
+}
+
+export default App;

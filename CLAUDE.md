@@ -10,6 +10,8 @@
 ## 기술 스택
 
 - React 18+ / TypeScript (strict 모드) / Vite
+  - TypeScript는 6.0.x로 고정: typescript-eslint가 `<6.1`만 지원 (지원 범위가 넓어지면 업그레이드)
+- 패키지 매니저: pnpm
 - 상태 관리: Zustand
 - 스타일: Tailwind CSS
 - 프리뷰 렌더링: Canvas 2D (`<video>` 태그를 화면에 직접 쓰지 않고 프레임을 캔버스에 그림)
@@ -105,7 +107,7 @@ docs/
 
 ### 1주차 — 기본 골격과 재생
 
-- [ ] 프로젝트 세팅 (Vite, TS strict, ESLint/Prettier, Tailwind, Vitest)
+- [x] 프로젝트 세팅 (Vite, TS strict, ESLint/Prettier, Tailwind, Vitest)
 - [ ] 영상·이미지 업로드 → 에셋 패널에 표시 (썸네일, 길이)
 - [ ] 에셋을 타임라인에 드래그해서 클립 배치
 - [ ] 재생/일시정지, 플레이헤드와 프리뷰 동기화, 타임라인 클릭으로 탐색
