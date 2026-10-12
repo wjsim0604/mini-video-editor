@@ -1,4 +1,6 @@
+import { Pause, Play } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button.tsx';
 import { projectDuration } from '@/core/composition.ts';
 import { formatTimecode } from '@/core/time.ts';
 import { playbackStore, usePlaybackStore } from '@/store/playbackStore.ts';
@@ -27,31 +29,23 @@ export function PlaybackControls() {
   }, [fps]);
 
   return (
-    <div className="flex h-10 shrink-0 items-center justify-center gap-3 border-t border-neutral-800 text-xs">
-      <button
-        type="button"
+    <div className="flex h-11 shrink-0 items-center justify-center gap-3 border-t bg-panel text-xs">
+      <Button
+        size="icon-sm"
+        variant="secondary"
+        className="rounded-full"
         aria-label={isPlaying ? '일시정지' : '재생'}
         title={isPlaying ? '일시정지 (Space)' : '재생 (Space)'}
         disabled={duration === 0}
-        className="flex h-7 w-7 items-center justify-center rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40"
         onClick={() => {
           playbackEngine.toggle();
         }}
       >
-        {isPlaying ? (
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-current">
-            <rect x="3" y="2" width="3.5" height="12" />
-            <rect x="9.5" y="2" width="3.5" height="12" />
-          </svg>
-        ) : (
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-current">
-            <path d="M4 2l10 6-10 6z" />
-          </svg>
-        )}
-      </button>
-      <p className="font-mono text-neutral-300 tabular-nums">
+        {isPlaying ? <Pause className="fill-current" /> : <Play className="fill-current" />}
+      </Button>
+      <p className="font-mono text-foreground tabular-nums">
         <span ref={currentTimeRef} data-testid="current-timecode" />
-        <span className="text-neutral-500"> / {formatTimecode(duration, fps)}</span>
+        <span className="text-muted-foreground"> / {formatTimecode(duration, fps)}</span>
       </p>
     </div>
   );

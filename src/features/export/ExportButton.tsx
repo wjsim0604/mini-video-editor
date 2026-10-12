@@ -1,4 +1,6 @@
+import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button.tsx';
 import { projectDuration } from '@/core/composition.ts';
 import { checkExportSupport } from '@/engine/export/codec.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
@@ -23,8 +25,8 @@ export function ExportButton() {
   }, []);
 
   return (
-    <button
-      type="button"
+    <Button
+      size="sm"
       disabled={isEmpty || isRunning || !supported}
       title={
         !supported
@@ -33,12 +35,12 @@ export function ExportButton() {
             ? '내보낼 클립이 없습니다'
             : '프로젝트를 MP4 영상으로 내보내기 (소리 없음)'
       }
-      className="rounded bg-sky-600 px-3 py-1 text-xs font-medium text-white hover:bg-sky-500 disabled:bg-neutral-800 disabled:text-neutral-500"
       onClick={() => {
         void startExport();
       }}
     >
+      <Download />
       내보내기
-    </button>
+    </Button>
   );
 }

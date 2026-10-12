@@ -30,5 +30,12 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
+  {
+    // shadcn/ui 컴포넌트는 컴포넌트와 함께 variants(cva)를 내보내는 관례를 따른다
+    files: ['src/components/ui/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
   prettier,
 ]);

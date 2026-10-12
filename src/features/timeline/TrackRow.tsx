@@ -56,7 +56,7 @@ export function TrackRow({ track, label, items, assetsById, pxPerSecond, range }
     <div
       role="list"
       aria-label={`트랙 ${label}`}
-      className="relative border-b border-neutral-800"
+      className="relative border-b"
       style={{ height: TRACK_HEIGHT }}
       {...dropHandlers}
     >

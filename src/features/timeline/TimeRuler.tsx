@@ -22,14 +22,14 @@ export function TimeRuler({ duration, pxPerSecond, range }: TimeRulerProps) {
   return (
     <div
       aria-hidden="true"
-      className="relative border-b border-neutral-800 select-none"
+      className="relative border-b select-none"
       style={{ height: RULER_HEIGHT }}
     >
       {ticks.map((time) => (
         <span
           key={time}
           data-testid="ruler-tick"
-          className="absolute top-0 h-full border-l border-neutral-700 pl-1 text-[10px] leading-6 text-neutral-500 tabular-nums"
+          className="absolute top-0 h-full border-l border-border pl-1 text-[10px] leading-6 text-muted-foreground tabular-nums"
           style={{ left: usToPx(time, pxPerSecond) }}
         >
           {formatRulerLabel(time)}

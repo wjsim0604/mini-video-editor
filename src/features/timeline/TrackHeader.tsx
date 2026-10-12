@@ -13,7 +13,7 @@ export function TrackHeader({ trackId, label }: TrackHeaderProps) {
 
   return (
     <div
-      className="group relative flex items-center justify-center border-b border-neutral-800 text-xs text-neutral-400"
+      className="group relative flex items-center justify-center border-b text-xs text-muted-foreground"
       style={{ height: TRACK_HEIGHT }}
     >
       {label}
@@ -22,7 +22,7 @@ export function TrackHeader({ trackId, label }: TrackHeaderProps) {
           type="button"
           aria-label={`트랙 ${label} 삭제`}
           title="빈 트랙 삭제"
-          className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded text-neutral-500 opacity-0 group-hover:opacity-100 hover:bg-neutral-700 hover:text-neutral-100 focus:opacity-100"
+          className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground focus:opacity-100"
           onClick={() => {
             const { project, dispatch } = projectStore.getState();
             const command = createRemoveTrackCommand(project, trackId);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import { createAddClipCommand } from '@/core/commands/addClip.ts';
@@ -307,21 +307,21 @@ describe('App', () => {
         .dispatch(
           createAddAssetCommand({ id: 'a', type: 'video', name: 'a.mp4', duration: 1_000_000 }),
         );
-      const confirm = vi
-        .spyOn(window, 'confirm')
-        .mockReturnValueOnce(false)
-        .mockReturnValueOnce(true);
       render(<App />);
       const button = screen.getByRole('button', { name: '새 프로젝트' });
 
+      // 확인 창에서 취소하면 아무것도 지우지 않는다
       fireEvent.click(button);
+      const dialog = screen.getByRole('alertdialog', { name: '새 프로젝트를 시작할까요?' });
+      fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       expect(project().assets).toHaveLength(1);
 
       fireEvent.click(button);
+      fireEvent.click(screen.getByRole('button', { name: '지우고 새로 시작' }));
       await vi.waitFor(() => {
         expect(project().assets).toEqual([]);
       });
-      expect(confirm).toHaveBeenCalledTimes(2);
       expect(projectStore.getState().past).toEqual([]);
       expect(await repository.loadLastProject()).toBeNull();
     });

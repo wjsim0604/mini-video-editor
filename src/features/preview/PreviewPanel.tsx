@@ -60,7 +60,7 @@ export function PreviewPanel() {
   }, [outputWidth, outputHeight]);
 
   return (
-    <section aria-label="프리뷰" className="flex min-h-0 min-w-0 flex-col bg-neutral-950">
+    <section aria-label="프리뷰" className="flex min-h-0 min-w-0 flex-col bg-background">
       <div
         ref={containerRef}
         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"

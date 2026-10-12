@@ -541,11 +541,13 @@ describe('Timeline', () => {
     });
 
     it('슬라이더로 배율을 바꾼다 (로그 스케일)', () => {
-      fireEvent.change(screen.getByRole('slider', { name: '타임라인 확대 비율' }), {
-        target: { value: '1' },
-      });
+      const slider = screen.getByRole('slider', { name: '타임라인 확대 비율' });
 
+      fireEvent.keyDown(slider, { key: 'End' });
       expect(zoom()).toBe(1000);
+
+      fireEvent.keyDown(slider, { key: 'Home' });
+      expect(zoom()).toBe(2);
     });
 
     it('Ctrl/Cmd + 휠로 줌하고, 일반 휠은 줌하지 않는다', () => {

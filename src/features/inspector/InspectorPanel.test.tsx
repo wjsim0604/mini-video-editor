@@ -60,7 +60,10 @@ describe('InspectorPanel', () => {
     addText();
     render(<InspectorPanel />);
 
-    fireEvent.change(screen.getByLabelText('글자 크기'), { target: { value: '120' } });
+    // 슬라이더는 키보드로 1씩, 숫자 칸은 값을 바로 바꾼다
+    fireEvent.keyDown(screen.getByRole('slider', { name: '글자 크기' }), { key: 'ArrowRight' });
+    expect(overlay()?.style.fontSize).toBe(73);
+    fireEvent.change(screen.getByLabelText('글자 크기 값'), { target: { value: '120' } });
     fireEvent.change(screen.getByLabelText('색상'), { target: { value: '#ff0000' } });
     fireEvent.change(screen.getByLabelText('X'), { target: { value: '300' } });
     fireEvent.change(screen.getByLabelText('Y'), { target: { value: '900' } });

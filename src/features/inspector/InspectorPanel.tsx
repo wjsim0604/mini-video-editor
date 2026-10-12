@@ -1,4 +1,11 @@
+import { Film, MousePointerClick, Type } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
+import { PanelHeader } from '@/components/PanelHeader.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { Slider } from '@/components/ui/slider.tsx';
+import { Textarea } from '@/components/ui/textarea.tsx';
+import { cn } from '@/lib/utils.ts';
 import { buildUpdateOverlayCommand, type OverlayPatch } from '@/core/commands/overlay.ts';
 import type { TextOverlay } from '@/core/project.ts';
 import { findItem } from '@/core/timelineItem.ts';
@@ -20,23 +27,33 @@ export function InspectorPanel() {
   return (
     <section
       aria-label="인스펙터"
-      className="flex min-h-0 flex-col overflow-y-auto border-l border-neutral-800"
+      className="flex min-h-0 flex-col overflow-y-auto border-l bg-panel"
     >
-      <div className="flex h-10 shrink-0 items-center border-b border-neutral-800 px-3">
-        <h2 className="text-xs font-semibold text-neutral-300">인스펙터</h2>
-      </div>
+      <PanelHeader title="인스펙터" />
       <div className="space-y-4 p-3 text-xs">
-        {!item && <p className="py-8 text-center text-neutral-500">편집할 항목을 선택하세요</p>}
+        {!item && (
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
+            <MousePointerClick aria-hidden="true" className="size-5" />
+            편집할 항목을 선택하세요
+          </div>
+        )}
         {item && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-neutral-400">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-md border bg-card/50 p-2.5 text-muted-foreground">
             <dt>종류</dt>
-            <dd className="text-neutral-200">
-              {item.kind === 'text' ? '텍스트' : (assetName ?? '클립')}
+            <dd className="flex items-center gap-1.5 text-foreground">
+              {item.kind === 'text' ? (
+                <Type aria-hidden="true" className="size-3.5 text-text-item-border" />
+              ) : (
+                <Film aria-hidden="true" className="size-3.5 text-clip-border" />
+              )}
+              <span className="truncate">
+                {item.kind === 'text' ? '텍스트' : (assetName ?? '클립')}
+              </span>
             </dd>
             <dt>시작</dt>
-            <dd className="font-mono text-neutral-200">{formatTimecode(item.start, fps)}</dd>
+            <dd className="font-mono text-foreground">{formatTimecode(item.start, fps)}</dd>
             <dt>길이</dt>
-            <dd className="font-mono text-neutral-200">
+            <dd className="font-mono text-foreground">
               {formatTimecode(item.end - item.start, fps)}
             </dd>
           </dl>
@@ -60,14 +77,14 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
   const { style } = overlay;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Field label="내용">
-        {(id) => (
-          <textarea
+        {({ id }) => (
+          <Textarea
             id={id}
             rows={3}
             value={overlay.text}
-            className="w-full resize-y rounded border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-neutral-100"
+            className="min-h-16 resize-y text-xs md:text-xs"
             onChange={(event) => {
               update(overlay.id, { text: event.target.value });
             }}
@@ -75,21 +92,24 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
         )}
       </Field>
       <Field label="글자 크기">
-        {(id) => (
-          <div className="flex items-center gap-2">
-            <input
-              id={id}
-              type="range"
+        {({ labelId }) => (
+          <div className="flex items-center gap-3">
+            <Slider
+              aria-labelledby={labelId}
               min={12}
               max={300}
-              value={style.fontSize}
-              className="min-w-0 flex-1 accent-neutral-300"
-              onChange={(event) => {
-                update(overlay.id, { style: { fontSize: Number(event.target.value) } });
+              step={1}
+              value={[style.fontSize]}
+              className="min-w-0 flex-1"
+              onValueChange={([fontSize]) => {
+                if (fontSize !== undefined) {
+                  update(overlay.id, { style: { fontSize } });
+                }
               }}
             />
             <NumberInput
               label="글자 크기 값"
+              className="w-16"
               value={style.fontSize}
               min={1}
               onCommit={(fontSize) => {
@@ -100,21 +120,24 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
         )}
       </Field>
       <Field label="색상">
-        {(id) => (
-          <input
-            id={id}
-            type="color"
-            value={style.color}
-            className="h-7 w-full cursor-pointer rounded border border-neutral-700 bg-neutral-900"
-            onChange={(event) => {
-              update(overlay.id, { style: { color: event.target.value } });
-            }}
-          />
+        {({ id }) => (
+          <div className="flex items-center gap-2">
+            <Input
+              id={id}
+              type="color"
+              value={style.color}
+              className="h-8 w-12 cursor-pointer p-1"
+              onChange={(event) => {
+                update(overlay.id, { style: { color: event.target.value } });
+              }}
+            />
+            <span className="font-mono text-muted-foreground uppercase">{style.color}</span>
+          </div>
         )}
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="X">
-          {(id) => (
+          {({ id }) => (
             <NumberInput
               id={id}
               label="X"
@@ -126,7 +149,7 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
           )}
         </Field>
         <Field label="Y">
-          {(id) => (
+          {({ id }) => (
             <NumberInput
               id={id}
               label="Y"
@@ -142,14 +165,22 @@ function TextInspector({ overlay }: { overlay: TextOverlay }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: (id: string) => ReactNode }) {
+/** 라벨과 입력 묶음. 네이티브 입력은 id(htmlFor)로, Radix 슬라이더처럼 label을 쓸 수 없는 컨트롤은 labelId로 연결한다 */
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: (ids: { id: string; labelId: string }) => ReactNode;
+}) {
   const id = useId();
+  const labelId = `${id}-label`;
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-neutral-400">
+    <div className="space-y-1.5">
+      <Label id={labelId} htmlFor={id} className="text-xs font-normal text-muted-foreground">
         {label}
-      </label>
-      {children(id)}
+      </Label>
+      {children({ id, labelId })}
     </div>
   );
 }
@@ -160,15 +191,16 @@ function NumberInput(props: {
   label: string;
   value: number;
   min?: number;
+  className?: string;
   onCommit: (value: number) => void;
 }) {
   return (
-    <input
+    <Input
       {...(props.id === undefined ? { 'aria-label': props.label } : { id: props.id })}
       type="number"
       value={Math.round(props.value)}
       {...(props.min === undefined ? {} : { min: props.min })}
-      className="w-16 rounded border border-neutral-700 bg-neutral-900 px-1.5 py-1 text-right text-neutral-100 tabular-nums"
+      className={cn('h-8 text-right text-xs tabular-nums md:text-xs', props.className)}
       onChange={(event) => {
         const next = event.target.valueAsNumber;
         if (Number.isFinite(next) && (props.min === undefined || next >= props.min)) {

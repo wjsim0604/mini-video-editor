@@ -1,4 +1,6 @@
+import { Clapperboard } from 'lucide-react';
 import { Profiler } from 'react';
+import { Separator } from '@/components/ui/separator.tsx';
 import { onTimelineRender } from '@/devtools/profiler.ts';
 import { AssetPanel } from '@/features/assets/AssetPanel.tsx';
 import { CompatibilityBanner } from '@/features/compat/CompatibilityBanner.tsx';
@@ -21,14 +23,18 @@ function App() {
   const isDialogOpen = useExportState().status !== 'idle';
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-950 text-neutral-100">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <div className="flex min-h-0 flex-1 flex-col" inert={isDialogOpen}>
-        <header className="flex h-12 items-center justify-between border-b border-neutral-800 px-4">
-          <h1 className="text-sm font-semibold">Mini Video Editor</h1>
-          <div className="flex items-center gap-3">
+        <header className="flex h-12 items-center justify-between border-b px-4">
+          <h1 className="flex items-center gap-2 text-sm font-semibold">
+            <Clapperboard aria-hidden="true" className="size-4 text-primary" />
+            Mini Video Editor
+          </h1>
+          <div className="flex items-center gap-2">
             <SaveStatusIndicator />
             <NewProjectButton />
             <HistoryControls />
+            <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
             <ExportButton />
           </div>
         </header>

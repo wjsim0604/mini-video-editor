@@ -13,7 +13,11 @@
   - TypeScript는 6.0.x로 고정: typescript-eslint가 `<6.1`만 지원 (지원 범위가 넓어지면 업그레이드)
 - 패키지 매니저: pnpm
 - 상태 관리: Zustand
-- 스타일: Tailwind CSS
+- 스타일: Tailwind CSS + shadcn/ui (new-york-v4 스타일, Radix 기반, 아이콘 lucide-react)
+  - 컴포넌트 소스는 `src/components/ui/`에 복사해 소유한다 (`components.json`). 이 환경에서는 레지스트리(ui.shadcn.com)가 막혀 GitHub 원본에서 수동 설치했다
+  - 색은 `src/index.css`의 CSS 변수 토큰만 쓴다 (`bg-primary`, `text-muted-foreground` 등). 편집기 고유 토큰: `panel`, `warning`, `clip`, `text-item`, `selection`, `playhead`. 팔레트 색(`neutral-800`, `sky-500` 등)을 직접 쓰지 않는다
+  - 다크 전용: `<html class="dark">`
+  - `ui/`를 고친 곳은 `// 편집기 수정:` 주석을 단다 (비활성 버튼도 title 툴팁 표시, Progress의 aria-valuenow 누락 수정, Slider 이름을 thumb에 연결, Alert `warning` variant)
 - 프리뷰 렌더링: Canvas 2D (`<video>` 태그를 화면에 직접 쓰지 않고 프레임을 캔버스에 그림)
 - 디코딩/인코딩: WebCodecs API
 - 디먹싱/디코딩 관리: mediabunny (MPL-2.0, 수정 없이 의존성으로 사용). 시간 단위가 초이므로 `engine/media/videoSource.ts` 경계에서 μs로 변환
@@ -136,7 +140,7 @@ src/
     assets/
     inspector/
     export/
-  components/  # 공용 UI
+  components/  # 공용 UI (ui/: shadcn/ui 컴포넌트)
   lib/         # IndexedDB 등 외부 연동 래퍼
 docs/
   devlog/      # 개발 기록 (블로그 글감)

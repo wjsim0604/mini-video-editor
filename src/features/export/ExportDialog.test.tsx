@@ -126,7 +126,8 @@ describe('내보내기', () => {
       '25',
     );
     expect(screen.getByText('30 / 120 프레임 (25%)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '내보내기' })).toBeDisabled();
+    // 모달이 열려 있는 동안 뒤의 화면은 보조기기에서 숨겨진다 (aria-hidden)
+    expect(screen.getByRole('button', { name: '내보내기', hidden: true })).toBeDisabled();
 
     await fake.finish({ blob: new Blob(['mp4']), codec: 'avc', codecLabel: 'H.264', frames: 120 });
 

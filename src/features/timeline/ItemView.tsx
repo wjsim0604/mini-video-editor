@@ -14,11 +14,14 @@ interface ItemViewProps {
 }
 
 const HANDLE_CLASS =
-  'absolute inset-y-0 z-10 w-1.5 cursor-ew-resize bg-amber-300/0 hover:bg-amber-300/80 group-data-[selected=true]:bg-amber-300/60';
+  'absolute inset-y-0 z-10 w-1.5 cursor-ew-resize bg-selection/0 hover:bg-selection/80 group-data-[selected=true]:bg-selection/60';
 
 const KIND_STYLE: Record<TimelineItem['kind'], { prefix: string; className: string }> = {
-  clip: { prefix: '클립', className: 'bg-sky-800 border-sky-400/60 text-sky-50' },
-  text: { prefix: '텍스트', className: 'bg-violet-800 border-violet-400/60 text-violet-50' },
+  clip: { prefix: '클립', className: 'bg-clip border-clip-border text-clip-foreground' },
+  text: {
+    prefix: '텍스트',
+    className: 'bg-text-item border-text-item-border text-text-item-foreground',
+  },
 };
 
 function ClipThumbnail({ assetId }: { assetId: string }) {
@@ -56,7 +59,7 @@ export const ItemView = memo(function ItemView({ item, label, pxPerSecond }: Ite
       data-selected={isSelected}
       className={`group absolute inset-y-1 flex cursor-grab touch-none overflow-hidden rounded border select-none active:cursor-grabbing ${
         style.className
-      } ${isSelected ? 'border-amber-300 ring-1 ring-amber-300' : ''} ${isDragging ? 'opacity-40' : ''}`}
+      } ${isSelected ? 'border-selection ring-1 ring-selection' : ''} ${isDragging ? 'opacity-40' : ''}`}
       style={{
         left: usToPx(span.start, pxPerSecond),
         width: usToPx(span.end - span.start, pxPerSecond),

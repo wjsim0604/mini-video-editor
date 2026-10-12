@@ -47,12 +47,12 @@ export function NewTrackZone({ pxPerSecond }: NewTrackZoneProps) {
     <div
       role="region"
       aria-label="새 트랙"
-      className="relative border-b border-neutral-800"
+      className="relative border-b"
       style={{ height: NEW_TRACK_ZONE_HEIGHT }}
       {...assetDrop.handlers}
     >
       {isDraggingSomething && !showGhost && (
-        <p className="pointer-events-none sticky left-0 inline-block px-2 text-[11px] leading-8 text-neutral-500">
+        <p className="pointer-events-none sticky left-0 inline-block px-2 text-[11px] leading-8 text-muted-foreground">
           여기에 놓으면 새 트랙이 만들어집니다
         </p>
       )}

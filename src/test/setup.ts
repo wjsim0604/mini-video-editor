@@ -31,6 +31,20 @@ for (const [name, value] of [
   }
 }
 
+// jsdom에는 ResizeObserver가 없다. Radix(Slider 등)가 크기 측정에 쓰므로 아무것도 하지 않는 구현을 둔다.
+if (!('ResizeObserver' in window)) {
+  const noop = (): void => undefined;
+  class ResizeObserverPolyfill {
+    observe = noop;
+    unobserve = noop;
+    disconnect = noop;
+  }
+  Object.defineProperty(window, 'ResizeObserver', {
+    value: ResizeObserverPolyfill,
+    configurable: true,
+  });
+}
+
 afterEach(() => {
   cleanup();
 });

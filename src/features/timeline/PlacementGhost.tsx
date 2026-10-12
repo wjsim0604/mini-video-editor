@@ -13,7 +13,7 @@ export function PlacementGhost({ start, duration, pxPerSecond }: PlacementGhostP
     <div
       data-testid="drop-preview"
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-1 rounded border border-dashed border-sky-300 bg-sky-300/15"
+      className="pointer-events-none absolute inset-y-1 rounded border border-dashed border-primary bg-primary/15"
       style={{ left: usToPx(start, pxPerSecond), width: usToPx(duration, pxPerSecond) }}
     />
   );

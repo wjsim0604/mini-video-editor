@@ -165,7 +165,7 @@ export function TextOverlayHandles({ width, height }: TextOverlayHandlesProps) {
             aria-label={`텍스트 상자 ${overlay.text.split('\n')[0] ?? ''}`}
             aria-pressed={isSelected}
             className={`pointer-events-auto absolute cursor-move touch-none border ${
-              isSelected ? 'border-amber-300' : 'border-transparent hover:border-white/50'
+              isSelected ? 'border-selection' : 'border-transparent hover:border-white/50'
             }`}
             style={{
               left: box.x * scale,

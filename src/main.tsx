@@ -12,7 +12,7 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 root.render(
-  <div className="flex h-screen items-center justify-center bg-neutral-950 text-sm text-neutral-400">
+  <div className="flex h-screen items-center justify-center bg-background text-sm text-muted-foreground">
     프로젝트를 불러오는 중…
   </div>,
 );

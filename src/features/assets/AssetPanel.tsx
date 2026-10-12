@@ -1,4 +1,9 @@
+import { CircleAlert, FileVideo, TriangleAlert, Upload, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { PanelHeader } from '@/components/PanelHeader.tsx';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
 import { AssetItem } from './AssetItem.tsx';
 import { useImportFiles } from './useImportFiles.ts';
@@ -44,22 +49,21 @@ export function AssetPanel() {
   return (
     <section
       aria-label="에셋"
-      className={`flex min-h-0 flex-col border-r border-neutral-800 ${isDragOver ? 'bg-sky-950/40 outline-2 -outline-offset-2 outline-sky-500' : ''}`}
+      className={cn(
+        'flex min-h-0 flex-col border-r bg-panel',
+        isDragOver && 'bg-primary/10 outline-2 -outline-offset-2 outline-primary',
+      )}
       onDragOver={handleDragOver}
       onDragLeave={() => {
         setIsDragOver(false);
       }}
       onDrop={handleDrop}
     >
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-neutral-800 px-3">
-        <h2 className="text-xs font-semibold text-neutral-300">에셋</h2>
-        <button
-          type="button"
-          className="rounded bg-neutral-800 px-2 py-1 text-xs hover:bg-neutral-700"
-          onClick={() => inputRef.current?.click()}
-        >
+      <PanelHeader title="에셋">
+        <Button variant="secondary" size="xs" onClick={() => inputRef.current?.click()}>
+          <Upload />
           가져오기
-        </button>
+        </Button>
         <input
           ref={inputRef}
           type="file"
@@ -69,42 +73,46 @@ export function AssetPanel() {
           data-testid="asset-file-input"
           onChange={handleChange}
         />
-      </div>
+      </PanelHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {errors.length > 0 && (
-          <ul aria-label="가져오기 오류" className="mb-1.5 space-y-1">
+          <ul aria-label="가져오기 알림" className="mb-1.5 space-y-1">
             {errors.map((error) => (
-              <li
-                key={error.id}
-                role="alert"
-                className="flex items-start gap-2 rounded bg-red-950/60 p-1.5 text-xs text-red-200"
-              >
-                <p className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{error.name}</span>
-                  {error.message}
-                </p>
-                <button
-                  type="button"
-                  aria-label={`${error.name} 오류 닫기`}
-                  className="px-1 text-red-300 hover:text-red-100"
-                  onClick={() => {
-                    dismissError(error.id);
-                  }}
+              <li key={error.id}>
+                <Alert
+                  variant={error.severity === 'error' ? 'destructive' : 'warning'}
+                  className="relative px-3 py-2 pr-9 text-xs"
                 >
-                  ×
-                </button>
+                  {error.severity === 'error' ? <CircleAlert /> : <TriangleAlert />}
+                  <AlertTitle className="truncate">{error.name}</AlertTitle>
+                  <AlertDescription className="text-xs">{error.message}</AlertDescription>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`${error.name} 오류 닫기`}
+                    className="absolute top-1.5 right-1.5"
+                    onClick={() => {
+                      dismissError(error.id);
+                    }}
+                  >
+                    <X />
+                  </Button>
+                </Alert>
               </li>
             ))}
           </ul>
         )}
 
         {isEmpty ? (
-          <p className="px-2 py-8 text-center text-xs leading-relaxed text-neutral-500">
-            영상·이미지·SRT 자막을
-            <br />
-            여기에 끌어다 놓으세요
-          </p>
+          <div className="m-1.5 flex flex-col items-center gap-2 rounded-lg border border-dashed px-2 py-8 text-center text-xs leading-relaxed text-muted-foreground">
+            <FileVideo aria-hidden="true" className="size-6" />
+            <p>
+              영상·이미지·SRT 자막을
+              <br />
+              여기에 끌어다 놓으세요
+            </p>
+          </div>
         ) : (
           <ul aria-label="에셋 목록" className="space-y-0.5">
             {assets.map((asset) => (
@@ -114,9 +122,9 @@ export function AssetPanel() {
               <li
                 key={item.id}
                 aria-busy="true"
-                className="flex items-center gap-2 p-1.5 text-xs text-neutral-400"
+                className="flex items-center gap-2 p-1.5 text-xs text-muted-foreground"
               >
-                <div className="aspect-video w-20 shrink-0 animate-pulse rounded bg-neutral-800" />
+                <div className="aspect-video w-20 shrink-0 animate-pulse rounded-md bg-muted" />
                 <p className="min-w-0">
                   <span className="block truncate">{item.name}</span>
                   불러오는 중…

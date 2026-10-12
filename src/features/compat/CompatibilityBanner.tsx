@@ -1,4 +1,7 @@
+import { TriangleAlert, X } from 'lucide-react';
 import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { detectCapabilities, type BrowserCapabilities } from '@/engine/capabilities.ts';
 import { describeLimitations, RECOMMENDED_BROWSERS } from './compatibility.ts';
 
@@ -16,27 +19,28 @@ export function CompatibilityBanner({
     return null;
   }
   return (
-    <div
-      role="alert"
-      aria-label="브라우저 호환성 안내"
-      className="flex items-start gap-3 border-b border-amber-800 bg-amber-950/70 px-4 py-2 text-xs text-amber-100"
-    >
-      <div className="min-w-0 flex-1 space-y-0.5">
-        {messages.map((message) => (
-          <p key={message}>{message}</p>
-        ))}
-        <p className="text-amber-300">{RECOMMENDED_BROWSERS}</p>
-      </div>
-      <button
-        type="button"
-        aria-label="호환성 안내 닫기"
-        className="px-1 text-amber-300 hover:text-amber-100"
-        onClick={() => {
-          setDismissed(true);
-        }}
-      >
-        ×
-      </button>
+    <div className="border-b px-4 py-2">
+      <Alert variant="warning" aria-label="브라우저 호환성 안내" className="relative pr-12">
+        <TriangleAlert />
+        <AlertTitle>이 브라우저에서는 일부 기능을 쓸 수 없습니다</AlertTitle>
+        <AlertDescription>
+          {messages.map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+          <p className="text-muted-foreground">{RECOMMENDED_BROWSERS}</p>
+        </AlertDescription>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="호환성 안내 닫기"
+          className="absolute top-2.5 right-2.5"
+          onClick={() => {
+            setDismissed(true);
+          }}
+        >
+          <X />
+        </Button>
+      </Alert>
     </div>
   );
 }

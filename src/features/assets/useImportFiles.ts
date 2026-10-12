@@ -17,6 +17,8 @@ export interface ImportError {
   id: string;
   name: string;
   message: string;
+  /** error: 가져오지 못함, warning: 가져왔지만 알릴 내용이 있음 */
+  severity: 'error' | 'warning';
 }
 
 /**
@@ -37,9 +39,9 @@ export function useImportFiles() {
     for (const { id, file } of queue) {
       try {
         if (isSubtitleFileName(file.name)) {
-          const message = await importSubtitleFile(file);
-          if (message) {
-            setErrors((current) => [...current, { id, name: file.name, message }]);
+          const notice = await importSubtitleFile(file);
+          if (notice) {
+            setErrors((current) => [...current, { id, name: file.name, ...notice }]);
           }
           continue;
         }
@@ -63,7 +65,7 @@ export function useImportFiles() {
         if (!(error instanceof UnsupportedMediaError)) {
           console.error(error);
         }
-        setErrors((current) => [...current, { id, name: file.name, message }]);
+        setErrors((current) => [...current, { id, name: file.name, message, severity: 'error' }]);
       } finally {
         setPending((current) => current.filter((item) => item.id !== id));
       }

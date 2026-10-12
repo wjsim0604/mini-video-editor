@@ -54,16 +54,13 @@ export function Timeline() {
   };
 
   return (
-    <section
-      aria-label="타임라인"
-      className="col-span-3 flex min-h-0 flex-col border-t border-neutral-800"
-    >
+    <section aria-label="타임라인" className="col-span-3 flex min-h-0 flex-col border-t">
       <TimelineToolbar pxPerSecond={pxPerSecond} zoom={zoom} />
       {/* 헤더 열과 트랙이 함께 세로 스크롤되도록 같은 스크롤 컨테이너 안에 둔다 */}
       <div className="flex min-h-0 flex-1 items-start overflow-y-auto">
-        <div className="sticky left-0 w-14 shrink-0 border-r border-neutral-800">
-          <div className="border-b border-neutral-800" style={{ height: RULER_HEIGHT }} />
-          <div className="border-b border-neutral-800" style={{ height: NEW_TRACK_ZONE_HEIGHT }} />
+        <div className="sticky left-0 w-14 shrink-0 border-r">
+          <div className="border-b" style={{ height: RULER_HEIGHT }} />
+          <div className="border-b" style={{ height: NEW_TRACK_ZONE_HEIGHT }} />
           {tracks.map((track) => (
             <TrackHeader key={track.id} trackId={track.id} label={labels.get(track.id) ?? ''} />
           ))}

@@ -45,9 +45,9 @@ export function Playhead({ pxPerSecond }: PlayheadProps) {
       ref={ref}
       data-testid="playhead"
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-px bg-red-500 will-change-transform"
+      className="pointer-events-none absolute inset-y-0 left-0 z-10 w-px bg-playhead will-change-transform"
     >
-      <div className="absolute -top-px -left-1.5 h-0 w-0 border-x-[6px] border-t-8 border-x-transparent border-t-red-500" />
+      <div className="absolute -top-px -left-1.5 h-0 w-0 border-x-[6px] border-t-8 border-x-transparent border-t-playhead" />
     </div>
   );
 }

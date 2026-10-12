@@ -15,7 +15,7 @@ export function SnapLine({ pxPerSecond }: SnapLineProps) {
     <div
       data-testid="snap-line"
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 z-20 w-px bg-amber-300"
+      className="pointer-events-none absolute inset-y-0 z-20 w-px bg-warning"
       style={{ left: usToPx(time, pxPerSecond) }}
     />
   );

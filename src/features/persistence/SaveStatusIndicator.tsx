@@ -1,3 +1,6 @@
+import { CircleAlert, Cloud, LoaderCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator.tsx';
+import { cn } from '@/lib/utils.ts';
 import { useSaveStatus } from '@/store/saveStatusStore.ts';
 
 const LABEL = {
@@ -22,14 +25,22 @@ export function SaveStatusIndicator() {
       : savedAt === null
         ? undefined
         : `마지막 저장: ${new Date(savedAt).toLocaleTimeString()}`;
+  const Icon = state === 'error' ? CircleAlert : state === 'saving' ? LoaderCircle : Cloud;
 
   return (
-    <p
-      role="status"
-      title={title}
-      className={`text-xs ${state === 'error' ? 'text-red-400' : 'text-neutral-500'}`}
-    >
-      {LABEL[state]}
-    </p>
+    <>
+      <p
+        role="status"
+        title={title}
+        className={cn(
+          'flex items-center gap-1.5 text-xs',
+          state === 'error' ? 'text-destructive' : 'text-muted-foreground',
+        )}
+      >
+        <Icon aria-hidden="true" className={cn('size-3.5', state === 'saving' && 'animate-spin')} />
+        {LABEL[state]}
+      </p>
+      <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
+    </>
   );
 }
