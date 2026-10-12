@@ -45,3 +45,19 @@ export function formatTimecode(us: Microseconds, fps: number): string {
 
   return [hours, minutes, seconds, frames].map((n) => String(n).padStart(2, '0')).join(':');
 }
+
+/** 에셋·클립 길이 표시용 `M:SS` (1시간 이상이면 `H:MM:SS`). 가장 가까운 초로 반올림한다. */
+export function formatDuration(us: Microseconds): string {
+  if (!Number.isFinite(us) || us < 0) {
+    throw new RangeError(`Invalid duration: ${String(us)}`);
+  }
+
+  const totalSeconds = Math.round(us / US_PER_SECOND);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+  return hours > 0
+    ? `${String(hours)}:${String(minutes).padStart(2, '0')}:${seconds}`
+    : `${String(minutes)}:${seconds}`;
+}

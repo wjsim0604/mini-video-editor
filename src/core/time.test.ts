@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatTimecode, frameToUs, secondsToUs, usToFrame, usToSeconds } from './time.ts';
+import {
+  formatDuration,
+  formatTimecode,
+  frameToUs,
+  secondsToUs,
+  usToFrame,
+  usToSeconds,
+} from './time.ts';
 
 describe('secondsToUs / usToSeconds', () => {
   it('초를 마이크로초 정수로 변환한다', () => {
@@ -50,5 +57,23 @@ describe('formatTimecode', () => {
   it('음수나 정수가 아닌 값은 거부한다', () => {
     expect(() => formatTimecode(-1, 30)).toThrow(RangeError);
     expect(() => formatTimecode(0.5, 30)).toThrow(RangeError);
+  });
+});
+
+describe('formatDuration', () => {
+  it.each([
+    [0, '0:00'],
+    [3_000_000, '0:03'],
+    [65_000_000, '1:05'],
+    [599_400_000, '9:59'],
+    [599_600_000, '10:00'],
+    [3_661_000_000, '1:01:01'],
+  ])('%i us → %s', (us, expected) => {
+    expect(formatDuration(us)).toBe(expected);
+  });
+
+  it('음수나 유한하지 않은 값은 거부한다', () => {
+    expect(() => formatDuration(-1)).toThrow(RangeError);
+    expect(() => formatDuration(Number.POSITIVE_INFINITY)).toThrow(RangeError);
   });
 });
