@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { estimateRemainingMs } from '@/core/export/exportPlan.ts';
 import { useExportState } from './exportStore.ts';
-import { cancelExport, closeExportDialog, downloadBlob } from './runExport.ts';
+import { downloadBlob } from '@/lib/download.ts';
+import { cancelExport, closeExportDialog } from './runExport.ts';
 
 function formatSeconds(ms: number): string {
   const seconds = Math.ceil(ms / 1000);

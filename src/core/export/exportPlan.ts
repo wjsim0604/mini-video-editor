@@ -17,10 +17,10 @@ export function exportFrameTiming(
   return { time, duration: frameToUs(index + 1, fps) - time };
 }
 
-/** 파일 이름으로 쓸 수 없는 문자를 바꾸고 .mp4를 붙인다 */
-export function exportFileName(projectName: string): string {
+/** 파일 이름으로 쓸 수 없는 문자를 바꾸고 확장자(기본 mp4)를 붙인다 */
+export function exportFileName(projectName: string, extension = 'mp4'): string {
   const safe = projectName.replace(/[\\/:*?"<>|]/g, '_').trim();
-  return `${safe || 'project'}.mp4`;
+  return `${safe || 'project'}.${extension}`;
 }
 
 /** 지금까지의 속도로 계산한 남은 시간(ms). 처음 몇 프레임은 추정이 불안정하므로 null */

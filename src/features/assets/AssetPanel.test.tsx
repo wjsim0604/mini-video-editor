@@ -124,4 +124,50 @@ describe('AssetPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'notes.txt 오류 닫기' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  describe('SRT 자막', () => {
+    const srt = (body: string) => new File([body], 'subs.srt', { type: '' });
+
+    it('자막을 새 텍스트 트랙에 추가하고 에셋으로는 등록하지 않는다', async () => {
+      render(<AssetPanel />);
+
+      selectFiles([
+        srt('1\n00:00:01,000 --> 00:00:02,000\n안녕\n\n2\n00:00:02,000 --> 00:00:03,000\n반가워\n'),
+      ]);
+
+      await waitFor(() => {
+        expect(projectStore.getState().project.overlays).toHaveLength(2);
+      });
+      const { project } = projectStore.getState();
+      expect(project.overlays.map((overlay) => overlay.text)).toEqual(['안녕', '반가워']);
+      expect(project.tracks.filter((track) => track.kind === 'text')).toHaveLength(1);
+      expect(project.assets).toHaveLength(0);
+      expect(probeFileMock).not.toHaveBeenCalled();
+
+      // undo 한 번에 트랙과 자막이 모두 사라진다
+      projectStore.getState().undo();
+      expect(projectStore.getState().project.overlays).toHaveLength(0);
+      expect(projectStore.getState().project.tracks).toHaveLength(1);
+    });
+
+    it('자막을 찾지 못하면 오류를 보여준다', async () => {
+      render(<AssetPanel />);
+
+      selectFiles([srt('그냥 텍스트')]);
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('자막을 찾지 못했습니다');
+      expect(projectStore.getState().project.overlays).toHaveLength(0);
+    });
+
+    it('일부 블록을 건너뛰면 개수를 알려준다', async () => {
+      render(<AssetPanel />);
+
+      selectFiles([srt('1\n00:00:01,000 --> 00:00:02,000\n정상\n\n2\n잘못된 시간\n내용\n')]);
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('1개를 가져왔고, 형식이 잘못된 1개는 건너뛰었습니다');
+      expect(projectStore.getState().project.overlays).toHaveLength(1);
+    });
+  });
 });

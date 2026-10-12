@@ -15,6 +15,7 @@ MP4로 내보냅니다. 디코딩·합성·인코딩이 모두 사용자의 브�
 - **줌·스크롤**: 2~1000px/s, Ctrl/Cmd+휠·핀치는 포인터 아래 시각 고정, 드래그 중 가장자리 자동 스크롤
 - **프리뷰**: Canvas 2D 합성, 클립 경계에서 끊기지 않는 재생, 프레임 단위 탐색
 - **텍스트 오버레이**: 여러 줄, 글자 크기·색상·위치를 인스펙터에서 수정, 프리뷰에서 직접 드래그
+- **SRT 자막**: `.srt`를 가져오면 텍스트 트랙에 자막으로 배치(겹치는 자막은 위 트랙·위 위치로), 텍스트처럼 편집한 뒤 SRT로 다시 저장
 - **undo/redo**: 모든 편집이 커맨드로 실행되어 되돌릴 수 있음. 연속 입력은 한 항목으로 합침
 - **키보드 단축키**: Space 재생, Delete/Backspace 삭제, S 자르기, Ctrl/Cmd+Z·Shift+Ctrl/Cmd+Z·Ctrl+Y (한글 자판에서도 동작)
 - **자동 저장**: IndexedDB에 자동 저장, 새로고침하면 원본 파일까지 복원
@@ -35,7 +36,7 @@ pnpm dev          # http://localhost:5173
 | `pnpm dev`          | 개발 서버                                 |
 | `pnpm build`        | 타입 검사 후 프로덕션 빌드 (`dist/`)      |
 | `pnpm preview`      | 프로덕션 빌드 미리보기                    |
-| `pnpm test:run`     | 테스트 1회 실행 (Vitest, 43개 파일 371개) |
+| `pnpm test:run`     | 테스트 1회 실행 (Vitest, 45개 파일 398개) |
 | `pnpm test`         | 테스트 watch 모드                         |
 | `pnpm typecheck`    | TypeScript 타입 검사                      |
 | `pnpm lint`         | ESLint                                    |
@@ -111,14 +112,14 @@ flowchart LR
   MediaStore --> Persistence
 ```
 
-| 폴더            | 역할                                                                            |
-| --------------- | ------------------------------------------------------------------------------- |
-| `src/core/`     | React와 무관한 순수 로직: 시간 변환, 스냅, 충돌 검사, 커맨드, 합성, 저장본 검증 |
-| `src/engine/`   | 디먹싱·디코딩(mediabunny + WebCodecs), 캔버스 렌더링, 재생 루프, 내보내기       |
-| `src/store/`    | Zustand store (Project·히스토리, 타임라인 화면 상태, 재생 상태, 미디어)         |
-| `src/features/` | 기능별 React UI (타임라인·프리뷰·인스펙터·에셋·내보내기·단축키·저장·호환성)     |
-| `src/lib/`      | IndexedDB 래퍼 (`ProjectRepository` 인터페이스 + idb 구현)                      |
-| `docs/devlog/`  | 개발 중 마주친 문제와 해결 기록                                                 |
+| 폴더            | 역할                                                                             |
+| --------------- | -------------------------------------------------------------------------------- |
+| `src/core/`     | React와 무관한 순수 로직: 시간 변환, 스냅, 충돌 검사, 커맨드, 합성, 저장본 검증  |
+| `src/engine/`   | 디먹싱·디코딩(mediabunny + WebCodecs), 캔버스 렌더링, 재생 루프, 내보내기        |
+| `src/store/`    | Zustand store (Project·히스토리, 타임라인 화면 상태, 재생 상태, 미디어)          |
+| `src/features/` | 기능별 React UI (타임라인·프리뷰·인스펙터·에셋·내보내기·자막·단축키·저장·호환성) |
+| `src/lib/`      | IndexedDB 래퍼 (`ProjectRepository` 인터페이스 + idb 구현)                       |
+| `docs/devlog/`  | 개발 중 마주친 문제와 해결 기록                                                  |
 
 ### 데이터 흐름의 핵심
 
@@ -155,6 +156,7 @@ flowchart LR
 - [한글 키보드에서도 동작하는 단축키 만들기](docs/devlog/2026-10-12-keyboard-shortcuts-hangul.md)
 - [새로고침 직전 편집이 사라지는 자동 저장 고치기](docs/devlog/2026-10-12-autosave-on-unload.md)
 - [브라우저에서 30초 1080p MP4 내보내기](docs/devlog/2026-10-12-mp4-export.md)
+- [SRT 자막을 텍스트 트랙으로: 관대한 파서와 겹치는 자막 나누기](docs/devlog/2026-10-12-srt-subtitles.md)
 
 ## 기술 스택
 

@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import type { Asset } from '@/core/project.ts';
+import { isSubtitleFileName } from '@/core/subtitles/srt.ts';
 import { probeFile, UnsupportedMediaError } from '@/engine/media/probe.ts';
 import { persistMedia } from '@/features/persistence/session.ts';
 import { mediaStore } from '@/store/mediaStore.ts';
 import { projectStore } from '@/store/projectStore.ts';
+import { importSubtitleFile } from './importSubtitles.ts';
 
 export interface PendingImport {
   id: string;
@@ -18,7 +20,7 @@ export interface ImportError {
 }
 
 /**
- * 파일을 순서대로 분석해 에셋으로 등록한다.
+ * 파일을 순서대로 분석해 에셋으로 등록한다. SRT 자막은 에셋이 아니라 텍스트 트랙으로 바로 들어간다.
  * 큰 영상을 동시에 디코딩하면 메모리를 많이 쓰므로 한 번에 하나씩 처리한다.
  */
 export function useImportFiles() {
@@ -34,6 +36,13 @@ export function useImportFiles() {
 
     for (const { id, file } of queue) {
       try {
+        if (isSubtitleFileName(file.name)) {
+          const message = await importSubtitleFile(file);
+          if (message) {
+            setErrors((current) => [...current, { id, name: file.name, message }]);
+          }
+          continue;
+        }
         const result = await probeFile(file);
         const asset: Asset = {
           id,

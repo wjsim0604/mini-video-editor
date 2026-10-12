@@ -54,6 +54,10 @@ describe('exportFileName', () => {
     expect(exportFileName('a/b:c*?')).toBe('a_b_c__.mp4');
     expect(exportFileName('   ')).toBe('project.mp4');
   });
+
+  it('다른 확장자를 붙일 수 있다', () => {
+    expect(exportFileName('자막', 'srt')).toBe('자막.srt');
+  });
 });
 
 describe('estimateRemainingMs', () => {

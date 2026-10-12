@@ -3,7 +3,8 @@ import { useProjectStore } from '@/store/projectStore.ts';
 import { AssetItem } from './AssetItem.tsx';
 import { useImportFiles } from './useImportFiles.ts';
 
-const ACCEPT = 'video/*,image/*';
+// .srt는 MIME 타입이 브라우저마다 달라 확장자로 받는다
+const ACCEPT = 'video/*,image/*,.srt';
 
 export function AssetPanel() {
   const assets = useProjectStore((state) => state.project.assets);
@@ -100,7 +101,7 @@ export function AssetPanel() {
 
         {isEmpty ? (
           <p className="px-2 py-8 text-center text-xs leading-relaxed text-neutral-500">
-            영상이나 이미지를
+            영상·이미지·SRT 자막을
             <br />
             여기에 끌어다 놓으세요
           </p>

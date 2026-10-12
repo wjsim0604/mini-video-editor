@@ -9,6 +9,7 @@ import { buildMoveItemCommand } from './moveItem.ts';
 import { createRemoveItemCommand, createRemoveTrackCommand } from './removeItem.ts';
 import { createSetItemSpanCommand } from './setItemSpan.ts';
 import { buildSplitCommand } from './splitItem.ts';
+import { createImportSubtitlesCommand, planSubtitleImport } from '../subtitles/subtitles.ts';
 
 /**
  * 3주차 완료 기준 "모든 편집 동작이 undo/redo 가능하다"를 확인하는 표.
@@ -154,6 +155,20 @@ const cases: Case[] = [
       const second = required(buildUpdateOverlayCommand(first.execute(p), 'x', { text: '안녕' }));
       return mergeCommands(first, second);
     },
+  ],
+  [
+    '자막 가져오기(겹치는 자막은 여러 트랙)',
+    (p) =>
+      createImportSubtitlesCommand(
+        planSubtitleImport(
+          p,
+          [
+            { start: 0, end: 2 * S, text: '하나' },
+            { start: S, end: 3 * S, text: '둘' },
+          ],
+          createId,
+        ),
+      ),
   ],
 ];
 
