@@ -1,3 +1,4 @@
+import { timelineRenders } from '@/devtools/profiler.ts';
 import { MediaSources } from '@/engine/media/mediaSources.ts';
 import { PlaybackEngine } from '@/engine/playback/PlaybackEngine.ts';
 import { PreviewRenderer } from '@/engine/render/PreviewRenderer.ts';
@@ -39,6 +40,8 @@ if (import.meta.env.DEV) {
       stats: previewRenderer.stats,
       engine: playbackEngine,
       project: () => projectStore.getState().project,
+      dispatch: projectStore.getState().dispatch,
+      timelineRenders,
     },
   });
 }

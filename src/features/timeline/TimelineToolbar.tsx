@@ -1,10 +1,20 @@
 import { buildSplitCommand } from '@/core/commands/splitClip.ts';
 import { findSplitTargets } from '@/core/timeline/split.ts';
+import { sliderToZoom, stepZoom, zoomToSlider } from '@/core/timeline/zoom.ts';
 import { playbackStore, usePlaybackStore } from '@/store/playbackStore.ts';
 import { projectStore, useProjectStore } from '@/store/projectStore.ts';
 import { timelineStore, useTimelineStore } from '@/store/timelineStore.ts';
+import type { ZoomController } from './useZoomController.ts';
 
-export function TimelineToolbar() {
+interface TimelineToolbarProps {
+  pxPerSecond: number;
+  zoom: ZoomController;
+}
+
+const ICON_BUTTON_CLASS =
+  'flex h-6 min-w-6 items-center justify-center rounded px-1.5 text-xs text-neutral-300 hover:bg-neutral-800';
+
+export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
   const project = useProjectStore((state) => state.project);
   const selectedClipId = useTimelineStore((state) => state.selectedClipId);
   const snapEnabled = useTimelineStore((state) => state.snapEnabled);
@@ -73,6 +83,51 @@ export function TimelineToolbar() {
         </svg>
         스냅
       </button>
+
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          aria-label="축소"
+          title="축소 (Ctrl/Cmd + 휠)"
+          className={ICON_BUTTON_CLASS}
+          onClick={() => {
+            zoom.zoomTo(stepZoom(pxPerSecond, -1));
+          }}
+        >
+          −
+        </button>
+        <input
+          type="range"
+          aria-label="타임라인 확대 비율"
+          min={0}
+          max={1}
+          step={0.01}
+          value={zoomToSlider(pxPerSecond)}
+          className="w-28 accent-neutral-300"
+          onChange={(event) => {
+            zoom.zoomTo(sliderToZoom(Number(event.target.value)));
+          }}
+        />
+        <button
+          type="button"
+          aria-label="확대"
+          title="확대 (Ctrl/Cmd + 휠)"
+          className={ICON_BUTTON_CLASS}
+          onClick={() => {
+            zoom.zoomTo(stepZoom(pxPerSecond, 1));
+          }}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          title="프로젝트 전체를 화면에 맞추기"
+          className={ICON_BUTTON_CLASS}
+          onClick={zoom.fitAll}
+        >
+          전체 보기
+        </button>
+      </div>
     </div>
   );
 }

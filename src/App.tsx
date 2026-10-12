@@ -1,3 +1,5 @@
+import { Profiler } from 'react';
+import { onTimelineRender } from '@/devtools/profiler.ts';
 import { AssetPanel } from '@/features/assets/AssetPanel.tsx';
 import { PreviewPanel } from '@/features/preview/PreviewPanel.tsx';
 import { Timeline } from '@/features/timeline/Timeline.tsx';
@@ -12,7 +14,9 @@ function App() {
         <AssetPanel />
         <PreviewPanel />
         <section aria-label="인스펙터" className="border-l border-neutral-800" />
-        <Timeline />
+        <Profiler id="timeline" onRender={onTimelineRender}>
+          <Timeline />
+        </Profiler>
       </main>
     </div>
   );

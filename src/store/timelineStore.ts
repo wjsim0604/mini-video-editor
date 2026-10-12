@@ -2,6 +2,7 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { ClipMoveTarget } from '@/core/timeline/moveClip.ts';
 import type { ClipTiming, TrimEdge } from '@/core/timeline/trim.ts';
+import { clampZoom } from '@/core/timeline/zoom.ts';
 import type { Microseconds } from '@/core/time.ts';
 
 /** 에셋 패널 → 타임라인 드래그에 사용하는 dataTransfer 타입 */
@@ -37,6 +38,7 @@ export interface TimelineState {
   snapEnabled: boolean;
   /** 드래그 중 스냅된 기준점 (세로 안내선 위치) */
   snapLine: Microseconds | null;
+  setPxPerSecond: (pxPerSecond: number) => void;
   setDraggingAssetId: (assetId: string | null) => void;
   selectClip: (clipId: string | null) => void;
   setClipDrag: (drag: ClipDragState | null) => void;
@@ -54,6 +56,9 @@ export function createTimelineStore() {
     clipTrim: null,
     snapEnabled: true,
     snapLine: null,
+    setPxPerSecond: (pxPerSecond) => {
+      set({ pxPerSecond: clampZoom(pxPerSecond) });
+    },
     setDraggingAssetId: (assetId) => {
       set({ draggingAssetId: assetId });
     },

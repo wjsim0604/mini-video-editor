@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Asset, Clip } from '@/core/project.ts';
 import { usToPx } from '@/core/timeline/coords.ts';
 import { useMediaStore } from '@/store/mediaStore.ts';
@@ -14,11 +15,12 @@ interface ClipViewProps {
 const HANDLE_CLASS =
   'absolute inset-y-0 z-10 w-1.5 cursor-ew-resize bg-amber-300/0 hover:bg-amber-300/80 group-data-[selected=true]:bg-amber-300/60';
 
-export function ClipView({ clip, asset, pxPerSecond }: ClipViewProps) {
+/** 같은 트랙의 다른 클립이 바뀌어도 이 클립의 props가 같으면 다시 그리지 않는다 */
+export const ClipView = memo(function ClipView({ clip, asset, pxPerSecond }: ClipViewProps) {
   const thumbnailUrl = useMediaStore((state) => state.entries[clip.assetId]?.thumbnailUrl);
   const isSelected = useTimelineStore((state) => state.selectedClipId === clip.id);
-  const { isDragging, handlers } = useClipDrag(clip, pxPerSecond);
-  const { trim, handleProps } = useClipTrim(clip, pxPerSecond);
+  const { isDragging, handlers } = useClipDrag(clip);
+  const { trim, handleProps } = useClipTrim(clip);
   const name = asset?.name ?? '(없는 에셋)';
 
   // 트리밍 중에는 아직 반영되지 않은 타이밍으로 표시한다
@@ -61,4 +63,4 @@ export function ClipView({ clip, asset, pxPerSecond }: ClipViewProps) {
       />
     </div>
   );
-}
+});

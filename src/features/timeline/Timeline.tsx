@@ -1,4 +1,4 @@
-import type { PointerEvent } from 'react';
+import { useMemo, useRef, type PointerEvent } from 'react';
 import { projectDuration } from '@/core/composition.ts';
 import { pxToUs, usToPx } from '@/core/timeline/coords.ts';
 import { quantizeToFrame, US_PER_SECOND } from '@/core/time.ts';
@@ -13,6 +13,9 @@ import { SnapLine } from './SnapLine.tsx';
 import { TimelineToolbar } from './TimelineToolbar.tsx';
 import { TimeRuler } from './TimeRuler.tsx';
 import { TrackRow } from './TrackRow.tsx';
+import { useTimelineViewport } from './useTimelineViewport.ts';
+import { useWheelZoom } from './useWheelZoom.ts';
+import { useZoomController } from './useZoomController.ts';
 
 /** 마지막 클립 뒤에 남겨둘 여유 공간 (뒤에 이어 붙일 자리) */
 const TRAILING_SPACE = 30 * US_PER_SECOND;
@@ -20,10 +23,19 @@ const TRAILING_SPACE = 30 * US_PER_SECOND;
 export function Timeline() {
   const project = useProjectStore((state) => state.project);
   const pxPerSecond = useTimelineStore((state) => state.pxPerSecond);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const range = useTimelineViewport(scrollRef, pxPerSecond);
+  const zoom = useZoomController(scrollRef, pxPerSecond);
+  useWheelZoom(scrollRef, zoom.zoomTo);
 
   const tracks = sortTracksForDisplay(project.tracks);
   const labels = trackLabels(project.tracks);
   const contentDuration = projectDuration(project) + TRAILING_SPACE;
+  const assetsById = useMemo(
+    () => new Map(project.assets.map((asset) => [asset.id, asset])),
+    [project.assets],
+  );
 
   // 빈 곳(눈금·트랙)을 클릭하면 그 시각으로 이동하고 선택을 해제한다. 클립 위 클릭은 클립이 처리한다.
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -43,7 +55,7 @@ export function Timeline() {
       aria-label="타임라인"
       className="col-span-3 flex min-h-0 flex-col border-t border-neutral-800"
     >
-      <TimelineToolbar />
+      <TimelineToolbar pxPerSecond={pxPerSecond} zoom={zoom} />
       {/* 헤더 열과 트랙이 함께 세로 스크롤되도록 같은 스크롤 컨테이너 안에 둔다 */}
       <div className="flex min-h-0 flex-1 items-start overflow-y-auto">
         <div className="sticky left-0 w-14 shrink-0 border-r border-neutral-800">
@@ -59,7 +71,12 @@ export function Timeline() {
             </div>
           ))}
         </div>
-        <div className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
+        <div
+          ref={scrollRef}
+          data-timeline-scroll
+          data-testid="timeline-scroll"
+          className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden"
+        >
           <div
             data-timeline-content
             data-testid="timeline-content"
@@ -67,7 +84,7 @@ export function Timeline() {
             style={{ width: usToPx(contentDuration, pxPerSecond) }}
             onPointerDown={handlePointerDown}
           >
-            <TimeRuler duration={contentDuration} pxPerSecond={pxPerSecond} />
+            <TimeRuler duration={contentDuration} pxPerSecond={pxPerSecond} range={range} />
             <NewTrackZone pxPerSecond={pxPerSecond} />
             {tracks.map((track) => (
               <TrackRow
@@ -75,8 +92,9 @@ export function Timeline() {
                 track={track}
                 label={labels.get(track.id) ?? ''}
                 clips={project.clips.filter((clip) => clip.trackId === track.id)}
-                assets={project.assets}
+                assetsById={assetsById}
                 pxPerSecond={pxPerSecond}
+                range={range}
               />
             ))}
             <SnapLine pxPerSecond={pxPerSecond} />

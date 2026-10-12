@@ -505,4 +505,95 @@ describe('Timeline', () => {
       expect(playbackStore.getState().currentTime).toBe(2_033_333);
     });
   });
+
+  describe('줌과 보이는 영역 렌더링', () => {
+    function scroller() {
+      return screen.getByTestId('timeline-scroll');
+    }
+
+    /** jsdom에는 레이아웃이 없어 스크롤 영역 크기와 위치를 직접 지정한다 */
+    function setViewport(width: number, scrollLeft: number) {
+      Object.defineProperty(scroller(), 'clientWidth', { value: width, configurable: true });
+      Object.defineProperty(scroller(), 'scrollLeft', {
+        value: scrollLeft,
+        configurable: true,
+        writable: true,
+      });
+      fireEvent.scroll(scroller());
+    }
+
+    function zoom() {
+      return timelineStore.getState().pxPerSecond;
+    }
+
+    it('확대·축소 버튼은 한 단계에 1.25배씩 바꾸고 클립 폭이 따라 바뀐다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+
+      fireEvent.click(screen.getByRole('button', { name: '확대' }));
+      expect(zoom()).toBe(62.5);
+      expect(screen.getByRole('listitem', { name: '클립 intro.mp4' })).toHaveStyle({
+        width: '250px',
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: '축소' }));
+      fireEvent.click(screen.getByRole('button', { name: '축소' }));
+      expect(zoom()).toBe(40);
+    });
+
+    it('슬라이더로 배율을 바꾼다 (로그 스케일)', () => {
+      fireEvent.change(screen.getByRole('slider', { name: '타임라인 확대 비율' }), {
+        target: { value: '1' },
+      });
+
+      expect(zoom()).toBe(1000);
+    });
+
+    it('Ctrl/Cmd + 휠로 줌하고, 일반 휠은 줌하지 않는다', () => {
+      fireEvent.wheel(scroller(), { deltaY: -100, ctrlKey: true });
+      expect(zoom()).toBeCloseTo(50 * Math.exp(0.2), 6);
+
+      const before = zoom();
+      fireEvent.wheel(scroller(), { deltaY: -100 });
+      expect(zoom()).toBe(before);
+    });
+
+    it('전체 보기는 프로젝트가 화면의 90%에 들어오게 한다', () => {
+      dragAssetToTrack('intro.mp4', 0); // 0~4s
+      setViewport(1000, 0);
+
+      fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
+
+      expect(zoom()).toBe(225);
+    });
+
+    it('보이는 범위(+여유) 밖의 클립과 눈금은 그리지 않는다', () => {
+      dragAssetToTrack('intro.mp4', 0); // 0~4s
+      dragAssetToTrack('outro.mp4', 100 * PX_PER_SECOND); // 100~102s
+      const clipNames = () =>
+        screen.queryAllByRole('listitem', { name: /^클립/ }).map((el) => el.ariaLabel);
+
+      // 화면 500px, 스크롤 0 → 렌더링 범위 0~20s
+      setViewport(500, 0);
+      expect(clipNames()).toEqual(['클립 intro.mp4']);
+      const tickCount = screen.getAllByTestId('ruler-tick').length;
+      expect(tickCount).toBeLessThanOrEqual(11);
+
+      // 스크롤 5000px(100s) → 렌더링 범위 90~120s
+      setViewport(500, 5000);
+      expect(clipNames()).toEqual(['클립 outro.mp4']);
+    });
+
+    it('끌고 있는 클립은 범위 밖으로 스크롤되어도 계속 그린다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      setViewport(500, 0);
+      const element = screen.getByRole('listitem', { name: '클립 intro.mp4' });
+      fireEvent.pointerDown(element, { button: 0, pointerId: 5, clientX: 50, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 5, clientX: 100, clientY: 80 });
+
+      setViewport(500, 5000);
+
+      expect(screen.getByRole('listitem', { name: '클립 intro.mp4' })).toBe(element);
+      fireEvent.pointerUp(element, { pointerId: 5, clientX: 100, clientY: 80 });
+    });
+  });
 });

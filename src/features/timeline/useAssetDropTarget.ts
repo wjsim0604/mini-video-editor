@@ -2,6 +2,7 @@ import { useState, type DragEvent } from 'react';
 import type { Asset, Clip } from '@/core/project.ts';
 import { pxToUs } from '@/core/timeline/coords.ts';
 import { findFreePlacement } from '@/core/timeline/placement.ts';
+import { autoScrollSpeed } from '@/core/timeline/viewport.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { projectStore } from '@/store/projectStore.ts';
 import { ASSET_DRAG_TYPE, timelineStore } from '@/store/timelineStore.ts';
@@ -52,6 +53,7 @@ export function useAssetDropTarget({ clips, pxPerSecond, onDrop }: AssetDropTarg
     }
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
+    scrollNearEdge(event);
 
     const asset = findAsset(timelineStore.getState().draggingAssetId);
     if (!asset) {
@@ -85,4 +87,19 @@ export function useAssetDropTarget({ clips, pxPerSecond, onDrop }: AssetDropTarg
   };
 
   return { preview, handlers: { onDragOver, onDragLeave, onDrop: handleDrop } };
+}
+
+/**
+ * HTML5 드래그 중 가장자리 자동 스크롤. dragover는 포인터가 멈춰 있어도 주기적으로 발생하므로
+ * 별도 rAF 루프 없이 이벤트마다 조금씩 스크롤한다.
+ */
+function scrollNearEdge(event: DragEvent): void {
+  const scroller = event.currentTarget.closest<HTMLElement>('[data-timeline-scroll]');
+  if (!scroller) {
+    return;
+  }
+  const rect = scroller.getBoundingClientRect();
+  if (rect.width > 0) {
+    scroller.scrollLeft += autoScrollSpeed(event.clientX - rect.left, rect.width);
+  }
 }
