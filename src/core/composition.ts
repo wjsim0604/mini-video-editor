@@ -1,4 +1,4 @@
-import { clipEnd } from './clip.ts';
+import { clipEnd, isClipActiveAtTime } from './clip.ts';
 import type { Clip, Project } from './project.ts';
 import type { Microseconds } from './time.ts';
 
@@ -9,10 +9,6 @@ export interface Layer {
   trackId: string;
   /** 원본 에셋 기준 시각 */
   sourceTime: Microseconds;
-}
-
-export function isClipActiveAt(clip: Clip, time: Microseconds): boolean {
-  return clip.start <= time && time < clipEnd(clip);
 }
 
 function videoTrackOrders(project: Project): Map<string, number> {
@@ -30,7 +26,7 @@ function videoTrackOrders(project: Project): Map<string, number> {
 export function resolveLayers(project: Project, time: Microseconds): Layer[] {
   const orders = videoTrackOrders(project);
   return project.clips
-    .filter((clip) => orders.has(clip.trackId) && isClipActiveAt(clip, time))
+    .filter((clip) => orders.has(clip.trackId) && isClipActiveAtTime(clip, time))
     .sort((a, b) => (orders.get(a.trackId) ?? 0) - (orders.get(b.trackId) ?? 0))
     .map((clip) => ({
       clipId: clip.id,

@@ -31,6 +31,8 @@ export class PlaybackEngine {
   private anchor = { time: 0, nowMs: 0 };
   private stillInFlight = false;
   private stillPending = false;
+  /** 트리밍 중처럼 아직 반영되지 않은 Project의 특정 프레임을 보여줄 때 사용한다 */
+  private framePreview: { project: Project; time: Microseconds } | null = null;
 
   constructor(deps: PlaybackEngineDeps) {
     this.deps = deps;
@@ -85,6 +87,26 @@ export class PlaybackEngine {
       this.requestStill();
     }
     this.emit();
+  }
+
+  /**
+   * 플레이헤드를 움직이지 않고 project의 time 프레임을 보여준다 (예: 트리밍 중 잘리는 지점).
+   * 재생 중이면 멈춘다. endPreview()를 호출하면 현재 위치 화면으로 돌아간다.
+   */
+  previewFrame(project: Project, time: Microseconds): void {
+    if (this.playing) {
+      this.pause();
+    }
+    this.framePreview = { project, time: Math.max(0, Math.round(time)) };
+    this.requestStill();
+  }
+
+  endPreview(): void {
+    if (!this.framePreview) {
+      return;
+    }
+    this.framePreview = null;
+    this.requestStill();
   }
 
   /** 프로젝트나 캔버스 크기가 바뀌었을 때 현재 화면을 다시 그린다 */
@@ -153,10 +175,7 @@ export class PlaybackEngine {
       return;
     }
     this.stillInFlight = true;
-    const project = this.deps.getProject();
-    const duration = projectDuration(project);
-    // 끝 위치(구간 밖)에서는 마지막 프레임을 보여준다
-    const time = duration > 0 ? Math.min(this.currentTime, duration - 1) : 0;
+    const { project, time } = this.framePreview ?? this.currentStill();
 
     this.deps.renderer
       .renderAt(project, time)
@@ -171,6 +190,13 @@ export class PlaybackEngine {
         }
         this.stillPending = false;
       });
+  }
+
+  private currentStill(): { project: Project; time: Microseconds } {
+    const project = this.deps.getProject();
+    const duration = projectDuration(project);
+    // 끝 위치(구간 밖)에서는 마지막 프레임을 보여준다
+    return { project, time: duration > 0 ? Math.min(this.currentTime, duration - 1) : 0 };
   }
 
   private emit(): void {

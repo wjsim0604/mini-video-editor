@@ -295,4 +295,111 @@ describe('Timeline', () => {
     expect(project.tracks).toHaveLength(2);
     expect(project.clips[0]).toMatchObject({ trackId: project.tracks[1]?.id, start: 2_000_000 });
   });
+
+  describe('트리밍과 자르기', () => {
+    function handle(name: string, edge: '시작' | '끝') {
+      return screen.getByRole('separator', { name: `${name} ${edge} 지점 트리밍` });
+    }
+
+    function dragHandle(name: string, edge: '시작' | '끝', fromX: number, toX: number) {
+      const element = handle(name, edge);
+      fireEvent.pointerDown(element, { button: 0, pointerId: 2, clientX: fromX, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 2, clientX: toX, clientY: 80 });
+      fireEvent.pointerUp(element, { pointerId: 2, clientX: toX, clientY: 80 });
+    }
+
+    function timings() {
+      return projectStore
+        .getState()
+        .project.clips.map(({ start, inPoint, outPoint }) => ({ start, inPoint, outPoint }));
+    }
+
+    it('끝 손잡이를 끌면 outPoint를 줄인다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+
+      dragHandle('intro.mp4', '끝', 200, 100);
+
+      expect(timings()).toEqual([{ start: 0, inPoint: 0, outPoint: 2_000_000 }]);
+    });
+
+    it('시작 손잡이를 끌면 start와 inPoint를 함께 옮긴다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+
+      dragHandle('intro.mp4', '시작', 0, 50);
+
+      expect(timings()).toEqual([{ start: 1_000_000, inPoint: 1_000_000, outPoint: 4_000_000 }]);
+    });
+
+    it('원본 길이와 이웃 클립을 넘어 늘릴 수 없다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      dragAssetToTrack('outro.mp4', 5 * PX_PER_SECOND);
+      dragHandle('intro.mp4', '끝', 200, 100);
+
+      // 원본은 4s까지지만 outro가 5s에 있어도 원본 끝(4s)에서 멈춘다
+      dragHandle('intro.mp4', '끝', 100, 400);
+      // outro 시작을 앞으로 늘리면 intro 끝(4s)에서 멈춘다
+      dragHandle('outro.mp4', '시작', 250, 0);
+
+      expect(timings()).toEqual([
+        { start: 0, inPoint: 0, outPoint: 4_000_000 },
+        { start: 5_000_000, inPoint: 0, outPoint: 2_000_000 },
+      ]);
+    });
+
+    it('트리밍 중에는 클립을 미리 줄여 보여주고 손잡이 드래그로 클립이 이동하지 않는다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      const element = handle('intro.mp4', '끝');
+
+      fireEvent.pointerDown(element, { button: 0, pointerId: 2, clientX: 200, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 2, clientX: 150, clientY: 80 });
+
+      const clip = screen.getByRole('listitem', { name: '클립 intro.mp4' });
+      expect(clip).toHaveStyle({ left: '0px', width: '150px' });
+      expect(clip).not.toHaveClass('opacity-40');
+      expect(timings()).toEqual([{ start: 0, inPoint: 0, outPoint: 4_000_000 }]);
+    });
+
+    it('Esc를 누르면 트리밍을 취소한다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      const element = handle('intro.mp4', '끝');
+
+      fireEvent.pointerDown(element, { button: 0, pointerId: 2, clientX: 200, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 2, clientX: 100, clientY: 80 });
+      fireEvent.keyDown(window, { key: 'Escape' });
+      fireEvent.pointerUp(element, { pointerId: 2, clientX: 100, clientY: 80 });
+
+      expect(timings()).toEqual([{ start: 0, inPoint: 0, outPoint: 4_000_000 }]);
+      expect(screen.getByRole('listitem', { name: '클립 intro.mp4' })).toHaveStyle({
+        width: '200px',
+      });
+    });
+
+    it('플레이헤드 위치에서 자르고 undo하면 합친다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 75 });
+
+      fireEvent.click(screen.getByRole('button', { name: '자르기' }));
+
+      expect(timings()).toEqual([
+        { start: 0, inPoint: 0, outPoint: 1_500_000 },
+        { start: 1_500_000, inPoint: 1_500_000, outPoint: 4_000_000 },
+      ]);
+      expect(screen.getAllByRole('listitem', { name: '클립 intro.mp4' })).toHaveLength(2);
+
+      act(() => {
+        projectStore.getState().undo();
+      });
+      expect(timings()).toEqual([{ start: 0, inPoint: 0, outPoint: 4_000_000 }]);
+    });
+
+    it('플레이헤드 아래에 클립이 없으면 자르기 버튼이 비활성화된다', () => {
+      dragAssetToTrack('intro.mp4', 0);
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 0 });
+
+      expect(screen.getByRole('button', { name: '자르기' })).toBeDisabled();
+
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 100 });
+      expect(screen.getByRole('button', { name: '자르기' })).toBeEnabled();
+    });
+  });
 });

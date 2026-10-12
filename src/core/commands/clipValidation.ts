@@ -25,3 +25,14 @@ export function assertClipPlaceable(project: Project, clip: Clip): void {
     throw new Error(`Clip overlaps with ${overlapping.id}`);
   }
 }
+
+/** 영상 클립이 원본 길이를 넘는 구간을 쓰지 않는지 검사한다 (이미지는 원본 길이 제한이 없다) */
+export function assertWithinSource(project: Project, clip: Clip): void {
+  const asset = project.assets.find((candidate) => candidate.id === clip.assetId);
+  if (!asset) {
+    throw new Error(`Asset not found: ${clip.assetId}`);
+  }
+  if (asset.type !== 'image' && clip.outPoint > asset.duration) {
+    throw new RangeError(`Clip exceeds source duration: ${clip.id}`);
+  }
+}

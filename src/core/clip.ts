@@ -9,6 +9,11 @@ export function clipEnd(clip: Clip): Microseconds {
   return clip.start + clipDuration(clip);
 }
 
+/** time이 클립 구간 [start, end) 안에 있는지 */
+export function isClipActiveAtTime(clip: Clip, time: Microseconds): boolean {
+  return clip.start <= time && time < clipEnd(clip);
+}
+
 /** 두 클립의 구간 [start, end)가 겹치는지 검사한다. 끝과 시작이 맞닿는 것은 겹침이 아니다. */
 export function clipsOverlap(a: Clip, b: Clip): boolean {
   return a.start < clipEnd(b) && b.start < clipEnd(a);

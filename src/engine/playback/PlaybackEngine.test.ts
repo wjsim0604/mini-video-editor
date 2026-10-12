@@ -180,4 +180,38 @@ describe('PlaybackEngine', () => {
 
     expect(ctx.engine.state.currentTime).toBe(5 * S);
   });
+
+  it('previewFrame은 플레이헤드를 움직이지 않고 주어진 프로젝트의 프레임을 그린다', async () => {
+    ctx.engine.seek(2 * S);
+    ctx.pendingRenders[0]?.resolve();
+    await flush();
+    const draft = makeProject(8 * S);
+
+    ctx.engine.previewFrame(draft, 7 * S);
+
+    expect(ctx.renderer.renderAt).toHaveBeenLastCalledWith(draft, 7 * S);
+    expect(ctx.engine.state.currentTime).toBe(2 * S);
+  });
+
+  it('endPreview하면 현재 위치 화면으로 돌아간다', async () => {
+    ctx.engine.seek(2 * S);
+    ctx.pendingRenders[0]?.resolve();
+    await flush();
+    ctx.engine.previewFrame(makeProject(8 * S), 7 * S);
+    ctx.pendingRenders[1]?.resolve();
+    await flush();
+
+    ctx.engine.endPreview();
+
+    expect(ctx.renderer.renderAt).toHaveBeenLastCalledWith(expect.anything(), 2 * S);
+  });
+
+  it('재생 중 previewFrame을 요청하면 재생을 멈춘다', () => {
+    ctx.engine.play();
+    ctx.advance(100);
+
+    ctx.engine.previewFrame(makeProject(8 * S), 7 * S);
+
+    expect(ctx.engine.state.isPlaying).toBe(false);
+  });
 });

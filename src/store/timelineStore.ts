@@ -1,6 +1,7 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import type { ClipMoveTarget } from '@/core/timeline/moveClip.ts';
+import type { ClipTiming, TrimEdge } from '@/core/timeline/trim.ts';
 import type { Microseconds } from '@/core/time.ts';
 
 /** 에셋 패널 → 타임라인 드래그에 사용하는 dataTransfer 타입 */
@@ -15,6 +16,13 @@ export interface ClipDragState {
   target: ClipMoveTarget;
 }
 
+/** 진행 중인 트리밍. 놓기 전까지 클립은 이 타이밍으로 표시된다. */
+export interface ClipTrimState {
+  clipId: string;
+  edge: TrimEdge;
+  timing: ClipTiming;
+}
+
 /** 편집 결과가 아닌 타임라인 화면 상태. undo 대상이 아니며 저장하지 않는다. */
 export interface TimelineState {
   pxPerSecond: number;
@@ -25,9 +33,11 @@ export interface TimelineState {
   draggingAssetId: string | null;
   selectedClipId: string | null;
   clipDrag: ClipDragState | null;
+  clipTrim: ClipTrimState | null;
   setDraggingAssetId: (assetId: string | null) => void;
   selectClip: (clipId: string | null) => void;
   setClipDrag: (drag: ClipDragState | null) => void;
+  setClipTrim: (trim: ClipTrimState | null) => void;
 }
 
 export function createTimelineStore() {
@@ -36,6 +46,7 @@ export function createTimelineStore() {
     draggingAssetId: null,
     selectedClipId: null,
     clipDrag: null,
+    clipTrim: null,
     setDraggingAssetId: (assetId) => {
       set({ draggingAssetId: assetId });
     },
@@ -44,6 +55,9 @@ export function createTimelineStore() {
     },
     setClipDrag: (drag) => {
       set({ clipDrag: drag });
+    },
+    setClipTrim: (trim) => {
+      set({ clipTrim: trim });
     },
   }));
 }
