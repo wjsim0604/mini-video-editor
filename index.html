@@ -8,7 +8,7 @@
       name="description"
       content="브라우저에서만 동작하는 미니 영상 편집기 — 자르고, 배치하고, 텍스트를 얹어 MP4로 내보내기 (WebCodecs)"
     />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Mini Video Editor</title>
     <script>
       // 첫 화면이 그려지기 전에 테마를 정한다 (깜빡임 방지). 키·규칙은 src/features/theme/theme.ts와 같다
@@ -17,9 +17,7 @@
         try {
           stored = localStorage.getItem('mini-video-editor:theme');
         } catch (e) {}
-        var dark =
-          stored === 'dark' ||
-          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark = stored === 'dark';
         document.documentElement.classList.toggle('dark', dark);
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
       })();

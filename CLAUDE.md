@@ -16,7 +16,7 @@
 - 스타일: Tailwind CSS + shadcn/ui (new-york-v4 스타일, Radix 기반, 아이콘 lucide-react)
   - 컴포넌트 소스는 `src/components/ui/`에 복사해 소유한다 (`components.json`). 이 환경에서는 레지스트리(ui.shadcn.com)가 막혀 GitHub 원본에서 수동 설치했다
   - 색은 `src/index.css`의 CSS 변수 토큰만 쓴다 (`bg-primary`, `text-muted-foreground` 등). 편집기 고유 토큰: `panel`, `stage`(프리뷰 바탕), `warning`, `clip`, `text-item`, `selection`, `playhead`. 팔레트 색(`neutral-800`, `sky-500` 등)을 직접 쓰지 않는다
-  - 라이트·다크 테마: 기본은 시스템 설정, 헤더 버튼으로 전환하고 `localStorage`에 기억한다 (`features/theme/`). 첫 화면 깜빡임을 막으려고 `index.html`의 인라인 스크립트가 렌더 전에 `<html>`의 `.dark`를 정한다
+  - 라이트·다크 테마: 기본은 라이트, 헤더 버튼으로 전환하고 `localStorage`에 기억한다 (`features/theme/`). 첫 화면 깜빡임을 막으려고 `index.html`의 인라인 스크립트가 렌더 전에 `<html>`의 `.dark`를 정한다
   - `ui/`를 고친 곳은 `// 편집기 수정:` 주석을 단다 (비활성 버튼도 title 툴팁 표시, Progress의 aria-valuenow 누락 수정, Slider 이름을 thumb에 연결, Alert `warning` variant)
 - 프리뷰 렌더링: Canvas 2D (`<video>` 태그를 화면에 직접 쓰지 않고 프레임을 캔버스에 그림)
 - 디코딩/인코딩: WebCodecs API

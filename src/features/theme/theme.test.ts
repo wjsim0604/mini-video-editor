@@ -2,15 +2,14 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { applyTheme, currentTheme, resolveTheme, setTheme, THEME_STORAGE_KEY } from './theme.ts';
 
 describe('resolveTheme', () => {
-  it('저장된 선택을 시스템 설정보다 우선한다', () => {
-    expect(resolveTheme('light', true)).toBe('light');
-    expect(resolveTheme('dark', false)).toBe('dark');
+  it('저장된 선택을 따른다', () => {
+    expect(resolveTheme('light')).toBe('light');
+    expect(resolveTheme('dark')).toBe('dark');
   });
 
-  it('저장된 값이 없거나 잘못되면 시스템 설정을 따른다', () => {
-    expect(resolveTheme(null, true)).toBe('dark');
-    expect(resolveTheme(null, false)).toBe('light');
-    expect(resolveTheme('blue', true)).toBe('dark');
+  it('저장된 값이 없거나 잘못되면 밝은 테마를 쓴다', () => {
+    expect(resolveTheme(null)).toBe('light');
+    expect(resolveTheme('blue')).toBe('light');
   });
 });
 
