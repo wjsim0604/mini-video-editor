@@ -17,6 +17,11 @@ export class MediaSources {
     this.getFile = getFile;
   }
 
+  /** 원본 파일이 있는지. 복원 시 파일이 저장되지 않았던 에셋은 그리지 않고 건너뛴다 */
+  hasFile(assetId: string): boolean {
+    return this.getFile(assetId) !== undefined;
+  }
+
   loadVideo(assetId: string): Promise<VideoSource> {
     return this.load(this.videos, assetId, openVideoSource);
   }

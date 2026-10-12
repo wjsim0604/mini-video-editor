@@ -42,6 +42,11 @@
   - 새 편집 커맨드를 만들면 `core/commands/undoRedo.test.ts`의 왕복 테스트 표에 추가한다
   - 삭제 커맨드는 원래 배열 위치에 되돌린다. 빈 트랙만 지울 수 있고 마지막 비디오 트랙은 지울 수 없다 (`canRemoveTrack`)
 - **직렬화 불가 데이터는 Project 밖에**: 원본 `File`, 썸네일 object URL 등은 `mediaStore`에 assetId로 보관한다. Project는 IndexedDB에 그대로 저장할 수 있는 순수 데이터만 갖는다.
+- **저장과 복원**: Project는 IndexedDB에 자동 저장(500ms 디바운스)하고, 원본 파일·썸네일은 가져올 때 한 번 저장한다 (`lib/projectRepository.ts`의 `ProjectRepository` 인터페이스 뒤에 idb 구현, 테스트는 메모리 구현).
+  - 페이지를 떠날 때 저장되지 않은 변경은 `localStorage`에 동기 백업하고, 시작 시 IndexedDB 저장본과 백업 중 더 최근 것을 복원한다 (비동기 IndexedDB는 언로드 중에 끝나지 못할 수 있다)
+  - 저장본은 `unknown`으로 읽어 `parsePersistedRecord`로 검증한다(형식·참조 무결성·`schemaVersion`). 실패하면 빈 프로젝트로 시작하고 저장본은 지우지 않는다
+  - 복원·새 프로젝트는 편집이 아니므로 커맨드 대신 `projectStore.loadProject`로 교체하고 히스토리를 비운다. 복원이 끝나기 전에는 편집기를 그리지 않는다
+  - undo 히스토리·줌·선택·플레이헤드는 저장하지 않는다. 시작 시 Project가 참조하지 않는 원본 파일은 지운다
 - **UI와 로직 분리**: 타임라인 계산(스냅, 충돌 검사, 좌표↔시간 변환)은 React와 무관한 순수 함수로 `core/`에 두고 테스트한다.
 - **타임라인 항목 일반화**: 클립과 텍스트는 `core/timelineItem.ts`의 `TimelineItem { id, trackId, start, end }`로 다룬다. 배치·이동·트리밍·자르기·스냅·가상화는 모두 이 형태로 계산한다. 영상·이미지 클립은 비디오 트랙에만, 텍스트는 텍스트 트랙에만 놓인다.
 - **텍스트 좌표**: `style.x`, `style.y`는 텍스트 **중심**의 위치, `fontSize`와 함께 출력 해상도 기준 px. 여러 줄(`\n`) 가운데 정렬, 시스템 한글 글꼴 + 글자 크기 비례 외곽선으로 그린다 (`engine/render/textLayout.ts`, 그리기와 프리뷰 클릭 판정이 같은 측정을 쓴다).
@@ -155,7 +160,7 @@ docs/
 - [x] 텍스트 오버레이 추가, 인스펙터에서 스타일 수정, 프리뷰에서 위치 드래그
 - [x] undo/redo (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z), 커맨드 패턴 기반
 - [x] 키보드 단축키 (스페이스 재생, Delete 삭제, S 자르기)
-- [ ] IndexedDB 자동 저장 및 새로고침 후 복원
+- [x] IndexedDB 자동 저장 및 새로고침 후 복원
 
 **완료 기준**: 모든 편집 동작이 undo/redo 가능하다
 

@@ -20,6 +20,11 @@ export interface ProjectState {
   undo: () => boolean;
   /** 다시 실행할 것이 없거나 실패하면 false */
   redo: () => boolean;
+  /**
+   * 저장본 복원·새 프로젝트처럼 Project 전체를 교체한다. 편집이 아니므로 커맨드를 거치지 않고
+   * 히스토리를 비운다 (이전 프로젝트의 커맨드로 새 프로젝트를 되돌릴 수 없도록).
+   */
+  loadProject: (project: Project) => void;
 }
 
 /** 같은 mergeKey의 커맨드가 이 시간 안에 이어지면 히스토리 한 항목으로 합친다 */
@@ -106,6 +111,9 @@ export function createProjectStore(
         lastDispatch: null,
       });
       return true;
+    },
+    loadProject: (project) => {
+      set({ project, past: [], future: [], lastDispatch: null });
     },
   }));
 }

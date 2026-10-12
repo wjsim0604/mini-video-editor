@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import type { Asset } from '@/core/project.ts';
 import { probeFile, UnsupportedMediaError } from '@/engine/media/probe.ts';
+import { persistMedia } from '@/features/persistence/session.ts';
 import { mediaStore } from '@/store/mediaStore.ts';
 import { projectStore } from '@/store/projectStore.ts';
 
@@ -43,7 +44,10 @@ export function useImportFiles() {
           height: result.height,
         };
         mediaStore.getState().register(id, file, result.thumbnail);
-        projectStore.getState().dispatch(createAddAssetCommand(asset));
+        if (projectStore.getState().dispatch(createAddAssetCommand(asset))) {
+          // 원본은 바뀌지 않으므로 가져올 때 한 번만 저장한다 (Project는 자동 저장이 따로 저장)
+          void persistMedia(id, file, result.thumbnail);
+        }
       } catch (error) {
         const message =
           error instanceof UnsupportedMediaError ? error.message : '파일을 불러오지 못했습니다';

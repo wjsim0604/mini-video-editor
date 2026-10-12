@@ -75,11 +75,13 @@ export class PreviewRenderer implements FrameRenderer {
     }
     const assets = indexAssets(project);
     const results = await Promise.allSettled(
-      resolveLayers(project, time).map((layer) =>
-        layer.kind === 'text'
-          ? Promise.resolve(textDrawable(layer.overlay))
-          : this.loadStill(assets.get(layer.assetId), layer),
-      ),
+      resolveLayers(project, time)
+        .filter((layer) => layer.kind === 'text' || this.sources.hasFile(layer.assetId))
+        .map((layer) =>
+          layer.kind === 'text'
+            ? Promise.resolve(textDrawable(layer.overlay))
+            : this.loadStill(assets.get(layer.assetId), layer),
+        ),
     );
     const drawables = results.flatMap((result) => {
       if (result.status === 'rejected') {
@@ -111,7 +113,10 @@ export class PreviewRenderer implements FrameRenderer {
     this.stats.ticks++;
 
     const assets = indexAssets(project);
-    const layers = resolveLayers(project, time);
+    // 원본 파일이 없는 클립(복원 실패)은 그리지 않는다
+    const layers = resolveLayers(project, time).filter(
+      (layer) => layer.kind === 'text' || this.sources.hasFile(layer.assetId),
+    );
     this.updateStreams(project, time, layers, assets);
 
     const drawables: Drawable[] = [];

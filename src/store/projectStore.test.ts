@@ -177,4 +177,17 @@ describe('projectStore', () => {
       expect(store.getState().project.assets).toHaveLength(HISTORY_LIMIT + 50);
     });
   });
+
+  it('loadProject는 Project를 교체하고 히스토리를 비운다', () => {
+    const store = createProjectStore();
+    store.getState().dispatch(createAddAssetCommand(makeAsset('a')));
+    store.getState().undo();
+    const next = { ...store.getState().project, id: 'loaded', name: '복원됨' };
+
+    store.getState().loadProject(next);
+
+    expect(store.getState().project).toBe(next);
+    expect(store.getState().past).toEqual([]);
+    expect(store.getState().future).toEqual([]);
+  });
 });

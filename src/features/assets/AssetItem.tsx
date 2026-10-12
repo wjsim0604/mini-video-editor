@@ -10,6 +10,8 @@ interface AssetItemProps {
 
 export function AssetItem({ asset }: AssetItemProps) {
   const thumbnailUrl = useMediaStore((state) => state.entries[asset.id]?.thumbnailUrl);
+  // 복원할 때 원본 파일이 저장되어 있지 않았던 에셋 (저장 공간 부족 등)
+  const isMissing = useMediaStore((state) => state.entries[asset.id] === undefined);
 
   const handleDragStart = (event: DragEvent) => {
     event.dataTransfer.setData(ASSET_DRAG_TYPE, asset.id);
@@ -51,6 +53,14 @@ export function AssetItem({ asset }: AssetItemProps) {
         {asset.width !== undefined && asset.height !== undefined && (
           <p className="text-neutral-400 tabular-nums">
             {asset.width}×{asset.height}
+          </p>
+        )}
+        {isMissing && (
+          <p
+            className="text-amber-400"
+            title="원본 파일이 저장되지 않아 복원하지 못했습니다. 다시 가져와 주세요."
+          >
+            파일 없음
           </p>
         )}
       </div>

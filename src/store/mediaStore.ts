@@ -11,11 +11,21 @@ export interface MediaState {
   entries: Partial<Record<string, MediaEntry>>;
   register: (assetId: string, file: File, thumbnail: Blob) => void;
   release: (assetId: string) => void;
+  /** 모든 파일과 썸네일 URL을 해제한다 (새 프로젝트) */
+  releaseAll: () => void;
 }
 
 export function createMediaStore() {
   return createStore<MediaState>()((set, get) => ({
     entries: {},
+    releaseAll: () => {
+      for (const entry of Object.values(get().entries)) {
+        if (entry) {
+          URL.revokeObjectURL(entry.thumbnailUrl);
+        }
+      }
+      set({ entries: {} });
+    },
     register: (assetId, file, thumbnail) => {
       get().release(assetId);
       const entry: MediaEntry = { file, thumbnailUrl: URL.createObjectURL(thumbnail) };

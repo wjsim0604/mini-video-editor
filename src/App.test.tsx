@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import { createAddClipCommand } from '@/core/commands/addClip.ts';
+import { toPersisted } from '@/core/persistence/persistedProject.ts';
 import { DEFAULT_VIDEO_TRACK_ID } from '@/core/project.ts';
+import { mediaStore } from '@/store/mediaStore.ts';
+import { repository } from '@/features/persistence/session.ts';
 import { playbackEngine } from '@/features/preview/playback.ts';
 import { playbackStore } from '@/store/playbackStore.ts';
 import { projectStore } from '@/store/projectStore.ts';
@@ -274,6 +277,53 @@ describe('App', () => {
       expect(project().tracks.map((track) => track.kind)).toEqual(['video']);
       pressUndo();
       expect(project().tracks.map((track) => track.kind)).toEqual(['video', 'text']);
+    });
+  });
+
+  describe('저장과 새 프로젝트', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('원본 파일이 없는 에셋은 "파일 없음"으로 표시한다', () => {
+      mediaStore.setState(mediaStore.getInitialState(), true);
+      projectStore.getState().dispatch(
+        createAddAssetCommand({
+          id: 'lost',
+          type: 'video',
+          name: 'lost.mp4',
+          duration: 1_000_000,
+        }),
+      );
+      render(<App />);
+
+      expect(screen.getByText('파일 없음')).toBeInTheDocument();
+    });
+
+    it('새 프로젝트는 확인을 받은 뒤 저장본을 지우고 빈 프로젝트로 시작한다', async () => {
+      await repository.saveProject(toPersisted(project(), 1));
+      projectStore
+        .getState()
+        .dispatch(
+          createAddAssetCommand({ id: 'a', type: 'video', name: 'a.mp4', duration: 1_000_000 }),
+        );
+      const confirm = vi
+        .spyOn(window, 'confirm')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+      render(<App />);
+      const button = screen.getByRole('button', { name: '새 프로젝트' });
+
+      fireEvent.click(button);
+      expect(project().assets).toHaveLength(1);
+
+      fireEvent.click(button);
+      await vi.waitFor(() => {
+        expect(project().assets).toEqual([]);
+      });
+      expect(confirm).toHaveBeenCalledTimes(2);
+      expect(projectStore.getState().past).toEqual([]);
+      expect(await repository.loadLastProject()).toBeNull();
     });
   });
 });
