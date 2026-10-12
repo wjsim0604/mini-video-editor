@@ -11,71 +11,101 @@ export interface ProjectState {
   future: Command[];
   /** 마지막으로 실행한 커맨드의 mergeKey와 시각 (연속 편집 합치기용) */
   lastDispatch: { mergeKey: string; at: number } | null;
-  /** 편집 동작은 반드시 이 함수를 통해 실행한다 */
-  dispatch: (command: Command) => void;
-  undo: () => void;
-  redo: () => void;
+  /**
+   * 편집 동작은 반드시 이 함수를 통해 실행한다.
+   * 커맨드가 실패(예외)하면 Project와 히스토리를 바꾸지 않고 false를 반환한다.
+   */
+  dispatch: (command: Command) => boolean;
+  /** 되돌릴 것이 없거나 실패하면 false */
+  undo: () => boolean;
+  /** 다시 실행할 것이 없거나 실패하면 false */
+  redo: () => boolean;
 }
 
 /** 같은 mergeKey의 커맨드가 이 시간 안에 이어지면 히스토리 한 항목으로 합친다 */
 export const MERGE_WINDOW_MS = 1000;
+/** 커맨드는 Project 일부를 붙잡고 있으므로 오래된 히스토리는 버린다 */
+export const HISTORY_LIMIT = 200;
+
+/** 커맨드 실행 결과. 실패하면 오류를 기록하고 null */
+function tryRun(action: string, run: () => Project): Project | null {
+  try {
+    return run();
+  } catch (error) {
+    console.error(`Failed to ${action}`, error);
+    return null;
+  }
+}
 
 export function createProjectStore(
   initialProject: Project = createEmptyProject(crypto.randomUUID(), '새 프로젝트'),
   now: () => number = () => Date.now(),
 ) {
-  return createStore<ProjectState>()((set) => ({
+  return createStore<ProjectState>()((set, get) => ({
     project: initialProject,
     past: [],
     future: [],
     lastDispatch: null,
     dispatch: (command) => {
-      set((state) => {
-        const at = now();
-        const previous = state.past.at(-1);
-        const { lastDispatch } = state;
-        const shouldMerge =
-          previous !== undefined &&
-          command.mergeKey !== undefined &&
-          lastDispatch?.mergeKey === command.mergeKey &&
-          at - lastDispatch.at <= MERGE_WINDOW_MS;
-        return {
-          project: command.execute(state.project),
-          past: shouldMerge
-            ? [...state.past.slice(0, -1), mergeCommands(previous, command)]
-            : [...state.past, command],
-          future: [],
-          lastDispatch: command.mergeKey === undefined ? null : { mergeKey: command.mergeKey, at },
-        };
+      const state = get();
+      const project = tryRun(`execute "${command.label}"`, () => command.execute(state.project));
+      if (!project) {
+        return false;
+      }
+      const at = now();
+      const previous = state.past.at(-1);
+      const { lastDispatch } = state;
+      const shouldMerge =
+        previous !== undefined &&
+        command.mergeKey !== undefined &&
+        lastDispatch?.mergeKey === command.mergeKey &&
+        at - lastDispatch.at <= MERGE_WINDOW_MS;
+      const past = shouldMerge
+        ? [...state.past.slice(0, -1), mergeCommands(previous, command)]
+        : [...state.past, command];
+      set({
+        project,
+        past: past.slice(-HISTORY_LIMIT),
+        future: [],
+        lastDispatch: command.mergeKey === undefined ? null : { mergeKey: command.mergeKey, at },
       });
+      return true;
     },
     undo: () => {
-      set((state) => {
-        const command = state.past.at(-1);
-        if (!command) {
-          return state;
-        }
-        return {
-          project: command.undo(state.project),
-          past: state.past.slice(0, -1),
-          future: [...state.future, command],
-          lastDispatch: null,
-        };
+      const state = get();
+      const command = state.past.at(-1);
+      if (!command) {
+        return false;
+      }
+      const project = tryRun(`undo "${command.label}"`, () => command.undo(state.project));
+      if (!project) {
+        return false;
+      }
+      set({
+        project,
+        past: state.past.slice(0, -1),
+        future: [...state.future, command],
+        lastDispatch: null,
       });
+      return true;
     },
     redo: () => {
-      set((state) => {
-        const command = state.future.at(-1);
-        if (!command) {
-          return state;
-        }
-        return {
-          project: command.execute(state.project),
-          past: [...state.past, command],
-          future: state.future.slice(0, -1),
-          lastDispatch: null,
-        };
+      const state = get();
+      const command = state.future.at(-1);
+      if (!command) {
+        return false;
+      }
+      const project = tryRun(`redo "${command.label}"`, () => command.execute(state.project));
+      if (!project) {
+        return false;
+      }
+      set({
+        project,
+        past: [...state.past, command].slice(-HISTORY_LIMIT),
+        future: state.future.slice(0, -1),
+        lastDispatch: null,
       });
+      return true;
     },
   }));
 }

@@ -38,6 +38,8 @@ export interface TimelineState {
   itemDrag: ItemDragState | null;
   itemTrim: ItemTrimState | null;
   snapEnabled: boolean;
+  /** 프리뷰에서 텍스트를 끄는 중 (드래그 중에는 undo/redo를 무시한다) */
+  previewDragging: boolean;
   /** 드래그 중 스냅된 기준점 (세로 안내선 위치) */
   snapLine: Microseconds | null;
   setPxPerSecond: (pxPerSecond: number) => void;
@@ -47,6 +49,7 @@ export interface TimelineState {
   setItemTrim: (trim: ItemTrimState | null) => void;
   toggleSnap: () => void;
   setSnapLine: (time: Microseconds | null) => void;
+  setPreviewDragging: (dragging: boolean) => void;
 }
 
 export function createTimelineStore() {
@@ -57,6 +60,7 @@ export function createTimelineStore() {
     itemDrag: null,
     itemTrim: null,
     snapEnabled: true,
+    previewDragging: false,
     snapLine: null,
     setPxPerSecond: (pxPerSecond) => {
       set({ pxPerSecond: clampZoom(pxPerSecond) });
@@ -79,6 +83,9 @@ export function createTimelineStore() {
     setSnapLine: (time) => {
       set({ snapLine: time });
     },
+    setPreviewDragging: (dragging) => {
+      set({ previewDragging: dragging });
+    },
   }));
 }
 
@@ -86,4 +93,9 @@ export const timelineStore = createTimelineStore();
 
 export function useTimelineStore<T>(selector: (state: TimelineState) => T): T {
   return useStore(timelineStore, selector);
+}
+
+/** 드래그·트리밍처럼 아직 반영되지 않은 편집이 진행 중인지 */
+export function isEditInProgress(state: TimelineState): boolean {
+  return state.itemDrag !== null || state.itemTrim !== null || state.previewDragging;
 }

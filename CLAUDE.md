@@ -36,6 +36,10 @@
   - 커맨드는 Project를 받아 새 Project를 반환하는 순수 함수: `Command { label; execute(project): Project; undo(project): Project }` (`core/commands/`)
   - React·Zustand 없이 테스트할 수 있고, Zustand의 불변 업데이트와 맞물린다
   - 같은 대상의 연속 편집(텍스트 입력, 슬라이더 등)은 커맨드에 `mergeKey`를 주어 1초 안에 이어지면 히스토리 한 항목으로 합친다 (undo 한 번에 처음 값으로)
+  - 히스토리는 실패에 안전하다: 커맨드가 예외를 던지면 Project·히스토리를 바꾸지 않고 `false`를 반환한다. 최근 200개까지만 보관한다
+  - undo 대상은 Project 편집뿐이다. 줌·스크롤·선택·스냅 설정·플레이헤드는 화면 상태라 undo 대상이 아니다
+  - undo/redo 단축키(Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Ctrl+Y)는 입력칸에서도 앱 히스토리를 대상으로 하고, 드래그·트리밍 중에는 무시한다
+  - 새 편집 커맨드를 만들면 `core/commands/undoRedo.test.ts`의 왕복 테스트 표에 추가한다
 - **직렬화 불가 데이터는 Project 밖에**: 원본 `File`, 썸네일 object URL 등은 `mediaStore`에 assetId로 보관한다. Project는 IndexedDB에 그대로 저장할 수 있는 순수 데이터만 갖는다.
 - **UI와 로직 분리**: 타임라인 계산(스냅, 충돌 검사, 좌표↔시간 변환)은 React와 무관한 순수 함수로 `core/`에 두고 테스트한다.
 - **타임라인 항목 일반화**: 클립과 텍스트는 `core/timelineItem.ts`의 `TimelineItem { id, trackId, start, end }`로 다룬다. 배치·이동·트리밍·자르기·스냅·가상화는 모두 이 형태로 계산한다. 영상·이미지 클립은 비디오 트랙에만, 텍스트는 텍스트 트랙에만 놓인다.
@@ -144,7 +148,7 @@ docs/
 ### 3주차 — 텍스트와 편집 히스토리
 
 - [x] 텍스트 오버레이 추가, 인스펙터에서 스타일 수정, 프리뷰에서 위치 드래그
-- [ ] undo/redo (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z), 커맨드 패턴 기반
+- [x] undo/redo (Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z), 커맨드 패턴 기반
 - [ ] 키보드 단축키 (스페이스 재생, Delete 삭제, S 자르기)
 - [ ] IndexedDB 자동 저장 및 새로고침 후 복원
 

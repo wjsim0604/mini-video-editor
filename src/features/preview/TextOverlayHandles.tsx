@@ -56,6 +56,7 @@ export function TextOverlayHandles({ width, height }: TextOverlayHandlesProps) {
   const cancelDrag = () => {
     session.current = null;
     setDraft(null);
+    timelineStore.getState().setPreviewDragging(false);
     playbackEngine.endPreview();
   };
 
@@ -67,6 +68,7 @@ export function TextOverlayHandles({ width, height }: TextOverlayHandlesProps) {
       if (event.key === 'Escape') {
         session.current = null;
         setDraft(null);
+        timelineStore.getState().setPreviewDragging(false);
         playbackEngine.endPreview();
       }
     };
@@ -111,6 +113,9 @@ export function TextOverlayHandles({ width, height }: TextOverlayHandlesProps) {
     const dy = event.clientY - current.startY;
     if (!current.moved && Math.abs(dx) < DRAG_THRESHOLD_PX && Math.abs(dy) < DRAG_THRESHOLD_PX) {
       return;
+    }
+    if (!current.moved) {
+      timelineStore.getState().setPreviewDragging(true);
     }
     current.moved = true;
     // 화면 이동량을 출력 해상도 기준 px로 바꾼다

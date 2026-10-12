@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import type { Asset } from '@/core/project.ts';
 import type { Command } from '@/core/commands/command.ts';
-import { createProjectStore } from './projectStore.ts';
+import { createProjectStore, HISTORY_LIMIT } from './projectStore.ts';
 
 function makeAsset(id: string): Asset {
   return { id, type: 'image', name: `${id}.png`, duration: 5_000_000 };
@@ -120,6 +120,61 @@ describe('projectStore', () => {
       store.getState().dispatch(rename('a', 'c', 'name'));
 
       expect(store.getState().past).toHaveLength(2);
+    });
+  });
+
+  describe('실패에 안전한 히스토리', () => {
+    const failing: Command = {
+      label: '실패',
+      execute: () => {
+        throw new Error('boom');
+      },
+      undo: () => {
+        throw new Error('boom');
+      },
+    };
+
+    it('실행이 실패하면 Project와 히스토리를 바꾸지 않고 false를 반환한다', () => {
+      const store = createProjectStore();
+      const before = store.getState();
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      expect(store.getState().dispatch(failing)).toBe(false);
+
+      expect(store.getState().project).toBe(before.project);
+      expect(store.getState().past).toBe(before.past);
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
+    it('undo가 실패하면 히스토리를 그대로 둔다', () => {
+      const store = createProjectStore();
+      const undoFails: Command = { ...failing, execute: (project) => ({ ...project, name: 'x' }) };
+      store.getState().dispatch(undoFails);
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      expect(store.getState().undo()).toBe(false);
+
+      expect(store.getState().project.name).toBe('x');
+      expect(store.getState().past).toHaveLength(1);
+      consoleError.mockRestore();
+    });
+
+    it('되돌릴 것이 없으면 false', () => {
+      const store = createProjectStore();
+
+      expect(store.getState().undo()).toBe(false);
+      expect(store.getState().redo()).toBe(false);
+    });
+
+    it('히스토리는 최근 200개까지만 보관한다', () => {
+      const store = createProjectStore();
+      for (let index = 0; index < HISTORY_LIMIT + 50; index++) {
+        store.getState().dispatch(createAddAssetCommand(makeAsset(`a${String(index)}`)));
+      }
+
+      expect(store.getState().past).toHaveLength(HISTORY_LIMIT);
+      expect(store.getState().project.assets).toHaveLength(HISTORY_LIMIT + 50);
     });
   });
 });
