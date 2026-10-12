@@ -61,6 +61,7 @@
 - **클립 배치**: 클립의 `transform { x, y, scale }`은 선택 필드다. (x, y)는 텍스트와 같이 출력 해상도 기준 **중심** 위치, `scale`은 화면에 꽉 맞춘(contain) 크기 대비 배율이며, 없으면 가운데·배율 1(기본 배치)이다. 영역 계산은 `core/render/fit.ts`의 `clipRect`(프리뷰 클릭 판정), 그리기는 `drawLayers`가 캔버스 변환으로 같은 결과를 낸다(회전 메타데이터 처리 유지). 원위치는 필드를 지워 저장본을 기존 형식과 같게 둔다
 - **프리뷰 드래그**: 텍스트·클립을 프리뷰에서 끌어 옮긴다 (`features/preview/PreviewItemHandles.tsx`). 위에 그려진 요소가 클릭을 먼저 받고, 크기는 인스펙터에서 바꾼다. 놓을 때 커맨드 한 번
   - 자석 스냅: 끄는 요소의 가장자리·중심을 화면 가장자리·중앙선, 같은 시각에 보이는 다른 텍스트의 가장자리·중심에 축별로 붙인다 (`core/render/snapBox.ts`, 화면 기준 8px, Alt로 일시 해제, 타임라인 스냅 토글을 따름). 붙은 기준선은 안내선으로 표시
+- **출력 해상도**: 헤더에서 프리셋(16:9 1080p·720p·4K, 9:16, 1:1, 4:5, 모두 짝수)으로 고른다 (`core/resolution.ts`, `features/project/`). 바꾸면 텍스트·클립 중심은 축별 비례로, 글자 크기는 짧은 변 비율로 옮기고 클립 배율은 그대로 둔다. `해상도 변경` 커맨드 하나(undo는 반올림 오차 없이 이전 값을 id별로 복원). 인코더가 그 해상도를 지원하지 않으면 내보내기에서 낮은 해상도를 안내한다
 - **이미지 클립 타이밍**: 이미지는 원본 길이 제한이 없고 어느 시각이나 같은 그림이므로, 트리밍·자르기 후 항상 `inPoint = 0`, `outPoint = 길이`로 정규화한다. 최소 클립 길이는 1프레임.
 - **편집 위치 보정**: 드롭·이동·트리밍 위치는 스냅(모든 트랙의 클립 경계, 플레이헤드, 0 / 화면 기준 8px / Alt로 일시 해제) → 스냅되지 않으면 프레임 경계로 반올림 → 빈자리·이웃 제한 순으로 결정한다. 클릭 탐색 위치도 프레임 경계로 맞춘다 (재생 중 시각은 제외).
 - **키보드 단축키**: `features/shortcuts/keymap.ts`의 `resolveShortcut`(순수 함수)로 키 → 동작을 정한다. Space 재생, Delete/Backspace 삭제, S 자르기, Ctrl/Cmd+Z·Shift+Ctrl/Cmd+Z·Ctrl+Y undo/redo.
@@ -119,7 +120,7 @@ interface Track {
 interface Project {
   id: string;
   name: string;
-  width: number;   // 출력 해상도 (기본 1920x1080)
+  width: number;   // 출력 해상도 (기본 1920x1080, 헤더의 프리셋으로 변경)
   height: number;
   fps: number;     // 기본 30
   tracks: Track[];

@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress.tsx';
 import { estimateRemainingMs } from '@/core/export/exportPlan.ts';
 import { useExportState } from './exportStore.ts';
 import { downloadBlob } from '@/lib/download.ts';
+import { useProjectStore } from '@/store/projectStore.ts';
 import { cancelExport, closeExportDialog } from './runExport.ts';
 
 function formatSeconds(ms: number): string {
@@ -35,6 +36,10 @@ function formatSize(bytes: number): string {
  */
 export function ExportDialog() {
   const state = useExportState();
+  // 내보내는 동안 편집기는 inert라 Project가 바뀌지 않는다 (시작 시점의 값과 같다)
+  const width = useProjectStore((s) => s.project.width);
+  const height = useProjectStore((s) => s.project.height);
+  const fps = useProjectStore((s) => s.project.fps);
   const primaryRef = useRef<HTMLButtonElement>(null);
   const isRunning = state.status === 'running';
 
@@ -100,7 +105,8 @@ export function ExportDialog() {
             )}
           </DialogTitle>
           <DialogDescription>
-            {state.status === 'running' && '1920×1080 · 30fps · 소리 없음'}
+            {state.status === 'running' &&
+              `${String(width)}×${String(height)} · ${String(fps)}fps · 소리 없음`}
             {state.status === 'done' &&
               `${state.fileName} · ${formatSize(state.blob.size)} · ${state.codecLabel} · ${formatSeconds(state.elapsedMs)} 걸림`}
             {state.status === 'cancelled' && '파일을 만들지 않았습니다.'}

@@ -9,6 +9,7 @@ import { createAddOverlayCommand, buildUpdateOverlayCommand } from './overlay.ts
 import { buildMoveItemCommand } from './moveItem.ts';
 import { createRemoveItemCommand, createRemoveTrackCommand } from './removeItem.ts';
 import { createSetItemSpanCommand } from './setItemSpan.ts';
+import { buildSetResolutionCommand } from './setResolution.ts';
 import { buildSplitCommand } from './splitItem.ts';
 import { createImportSubtitlesCommand, planSubtitleImport } from '../subtitles/subtitles.ts';
 
@@ -150,6 +151,15 @@ const cases: Case[] = [
     '클립 배치 초기화',
     (p) => required(buildSetClipTransformCommand(p, 'img', null)),
     (p) => required(buildSetClipTransformCommand(p, 'img', { x: 100 })).execute(p),
+  ],
+  [
+    '해상도 변경(비율 변경, 배치 이동 포함)',
+    (p) => required(buildSetResolutionCommand(p, { width: 1080, height: 1920 })),
+    (p) => required(buildSetClipTransformCommand(p, 'img', { x: 333 })).execute(p),
+  ],
+  [
+    '해상도 변경(반올림 발생)',
+    (p) => required(buildSetResolutionCommand(p, { width: 1080, height: 1350 })),
   ],
   ['클립 삭제', (p) => required(createRemoveItemCommand(p, 'c1'))],
   ['텍스트 삭제', (p) => required(createRemoveItemCommand(p, 'x'))],

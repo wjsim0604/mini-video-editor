@@ -132,7 +132,9 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
   const codec = await pickExportCodec(project.width, project.height, project.fps);
   if (!codec) {
     throw new ExportUnsupportedError(
-      '이 브라우저에서는 영상 인코딩(WebCodecs)을 사용할 수 없습니다',
+      typeof VideoEncoder === 'undefined'
+        ? '이 브라우저에서는 영상 인코딩(WebCodecs)을 사용할 수 없습니다'
+        : `이 브라우저에서는 ${String(project.width)}×${String(project.height)} 해상도로 인코딩할 수 없습니다. 더 낮은 해상도를 선택해 주세요`,
     );
   }
   throwIfAborted(signal);

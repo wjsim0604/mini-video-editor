@@ -13,6 +13,7 @@ import { NewProjectButton } from '@/features/persistence/NewProjectButton.tsx';
 import { SaveStatusIndicator } from '@/features/persistence/SaveStatusIndicator.tsx';
 import { InspectorPanel } from '@/features/inspector/InspectorPanel.tsx';
 import { PreviewPanel } from '@/features/preview/PreviewPanel.tsx';
+import { ResolutionSelect } from '@/features/project/ResolutionSelect.tsx';
 import { useGlobalShortcuts } from '@/features/shortcuts/useGlobalShortcuts.ts';
 import { ThemeToggle } from '@/features/theme/ThemeToggle.tsx';
 import { Timeline } from '@/features/timeline/Timeline.tsx';
@@ -35,6 +36,7 @@ function App() {
             <SaveStatusIndicator />
             <NewProjectButton />
             <HistoryControls />
+            <ResolutionSelect />
             <ThemeToggle />
             <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-5" />
             <ExportButton />
