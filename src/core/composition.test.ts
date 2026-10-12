@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { findUpcomingClips, projectDuration, resolveLayers } from './composition.ts';
+import { findUpcomingClips, projectDuration, resolveLayers, type Layer } from './composition.ts';
 import { createEmptyProject, type Clip, type Project } from './project.ts';
 
 const S = 1_000_000;
+
+function layerId(layer: Layer): string {
+  return layer.kind === 'clip' ? layer.clipId : layer.overlay.id;
+}
 
 function makeClip(
   id: string,
@@ -31,7 +35,7 @@ describe('resolveLayers', () => {
     const project = makeProject([makeClip('a', 'v1', 2 * S, 10 * S, 15 * S)]);
 
     expect(resolveLayers(project, 3 * S)).toEqual([
-      { clipId: 'a', assetId: 'asset-a', trackId: 'v1', sourceTime: 11 * S },
+      { kind: 'clip', clipId: 'a', assetId: 'asset-a', trackId: 'v1', sourceTime: 11 * S },
     ]);
   });
 
@@ -41,8 +45,8 @@ describe('resolveLayers', () => {
       makeClip('b', 'v1', 2 * S, 0, 2 * S),
     ]);
 
-    expect(resolveLayers(project, 2 * S - 1).map((layer) => layer.clipId)).toEqual(['a']);
-    expect(resolveLayers(project, 2 * S).map((layer) => layer.clipId)).toEqual(['b']);
+    expect(resolveLayers(project, 2 * S - 1).map(layerId)).toEqual(['a']);
+    expect(resolveLayers(project, 2 * S).map(layerId)).toEqual(['b']);
     expect(resolveLayers(project, 4 * S)).toEqual([]);
   });
 
@@ -53,7 +57,7 @@ describe('resolveLayers', () => {
       makeClip('bottom', 'v1', 0, 0, 5 * S),
     ]);
 
-    expect(resolveLayers(project, S).map((layer) => layer.clipId)).toEqual(['bottom', 'top']);
+    expect(resolveLayers(project, S).map(layerId)).toEqual(['bottom', 'top']);
   });
 });
 
@@ -92,5 +96,31 @@ describe('projectDuration', () => {
       ],
     };
     expect(projectDuration(withOverlay)).toBe(8 * S);
+  });
+});
+
+describe('resolveLayers — 텍스트', () => {
+  it('텍스트도 트랙 순서대로 섞어서 반환한다', () => {
+    const project: Project = {
+      ...makeProject([makeClip('bottom', 'v1', 0, 0, 5 * S), makeClip('top', 'v2', 0, 0, 5 * S)]),
+      tracks: [
+        { id: 'v1', kind: 'video', order: 0 },
+        { id: 't1', kind: 'text', order: 1 },
+        { id: 'v2', kind: 'video', order: 2 },
+      ],
+      overlays: [
+        {
+          id: 'caption',
+          trackId: 't1',
+          start: 0,
+          duration: 2 * S,
+          text: 'hi',
+          style: { fontSize: 72, color: '#fff', x: 0, y: 0 },
+        },
+      ],
+    };
+
+    expect(resolveLayers(project, S).map(layerId)).toEqual(['bottom', 'caption', 'top']);
+    expect(resolveLayers(project, 3 * S).map(layerId)).toEqual(['bottom', 'top']);
   });
 });

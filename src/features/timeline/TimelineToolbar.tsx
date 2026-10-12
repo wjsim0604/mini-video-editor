@@ -1,4 +1,6 @@
 import { buildSplitCommand } from '@/core/commands/splitItem.ts';
+import { buildAddTextCommand } from '@/core/text.ts';
+import { quantizeToFrame } from '@/core/time.ts';
 import { findSplitTargets } from '@/core/timeline/split.ts';
 import { sliderToZoom, stepZoom, zoomToSlider } from '@/core/timeline/zoom.ts';
 import { playbackStore, usePlaybackStore } from '@/store/playbackStore.ts';
@@ -23,6 +25,14 @@ export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
     (state) => findSplitTargets(project, state.currentTime, selectedItemId).length > 0,
   );
 
+  const handleAddText = () => {
+    const { project: latest, dispatch } = projectStore.getState();
+    const overlayId = crypto.randomUUID();
+    const time = quantizeToFrame(playbackStore.getState().currentTime, latest.fps);
+    dispatch(buildAddTextCommand(latest, time, { overlayId, trackId: crypto.randomUUID() }));
+    timelineStore.getState().selectItem(overlayId);
+  };
+
   const handleSplit = () => {
     const { project: latest, dispatch } = projectStore.getState();
     const command = buildSplitCommand(
@@ -42,6 +52,22 @@ export function TimelineToolbar({ pxPerSecond, zoom }: TimelineToolbarProps) {
       aria-label="타임라인 도구"
       className="flex h-8 shrink-0 items-center gap-1 border-b border-neutral-800 px-2"
     >
+      <button
+        type="button"
+        title="플레이헤드 위치에 텍스트 추가"
+        className="flex h-6 items-center gap-1 rounded px-2 text-xs text-neutral-200 hover:bg-neutral-800"
+        onClick={handleAddText}
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 16 16"
+          className="h-3.5 w-3.5 fill-none stroke-current"
+          strokeWidth="1.5"
+        >
+          <path d="M3 4V3h10v1M8 3v10M6 13h4" />
+        </svg>
+        텍스트
+      </button>
       <button
         type="button"
         title="플레이헤드 위치에서 자르기"

@@ -1,11 +1,12 @@
 import type { VideoSample } from 'mediabunny';
 import { findUpcomingClips, resolveLayers, type Layer } from '@/core/composition.ts';
-import type { Asset, Project } from '@/core/project.ts';
+import type { Asset, Project, TextOverlay } from '@/core/project.ts';
 import { containRect } from '@/core/render/fit.ts';
 import type { Microseconds } from '@/core/time.ts';
 import { FrameStream } from '../decode/FrameStream.ts';
 import type { MediaSources } from '../media/mediaSources.ts';
 import type { VideoSource } from '../media/videoSource.ts';
+import { drawTextOverlay } from './textLayout.ts';
 
 /** PlaybackEngine이 사용하는 렌더러 인터페이스. 테스트에서는 가짜 구현으로 대체한다. */
 export interface FrameRenderer {
@@ -24,13 +25,17 @@ export interface RenderStats {
   lateTicks: number;
   lastDrawn: {
     time: Microseconds;
-    frames: { clipId: string; frameTime: Microseconds | null }[];
+    /** 그려진 레이어(클립·텍스트 id)와 영상 프레임 시각 */
+    frames: { id: string; frameTime: Microseconds | null }[];
   } | null;
 }
 
+type ClipLayer = Extract<Layer, { kind: 'clip' }>;
+
 type Drawable =
-  | { kind: 'video'; clipId: string; sample: VideoSample; frameTime: Microseconds }
-  | { kind: 'image'; clipId: string; bitmap: ImageBitmap };
+  | { kind: 'video'; id: string; sample: VideoSample; frameTime: Microseconds }
+  | { kind: 'image'; id: string; bitmap: ImageBitmap }
+  | { kind: 'text'; id: string; overlay: TextOverlay };
 
 interface StreamEntry {
   source: VideoSource;
@@ -70,7 +75,11 @@ export class PreviewRenderer implements FrameRenderer {
     }
     const assets = indexAssets(project);
     const results = await Promise.allSettled(
-      resolveLayers(project, time).map((layer) => this.loadStill(assets.get(layer.assetId), layer)),
+      resolveLayers(project, time).map((layer) =>
+        layer.kind === 'text'
+          ? Promise.resolve(textDrawable(layer.overlay))
+          : this.loadStill(assets.get(layer.assetId), layer),
+      ),
     );
     const drawables = results.flatMap((result) => {
       if (result.status === 'rejected') {
@@ -82,7 +91,7 @@ export class PreviewRenderer implements FrameRenderer {
 
     try {
       if (token === this.renderToken) {
-        this.draw(time, drawables);
+        this.draw(project, time, drawables);
       }
     } finally {
       for (const drawable of drawables) {
@@ -107,7 +116,10 @@ export class PreviewRenderer implements FrameRenderer {
 
     const drawables: Drawable[] = [];
     for (const layer of layers) {
-      const drawable = this.peekFrame(assets.get(layer.assetId), layer);
+      const drawable =
+        layer.kind === 'text'
+          ? textDrawable(layer.overlay)
+          : this.peekFrame(assets.get(layer.assetId), layer);
       if (!drawable) {
         // 프레임이 아직 준비되지 않았다. 검은 화면으로 깜빡이는 대신 이전 화면을 유지한다.
         this.stats.lateTicks++;
@@ -115,7 +127,7 @@ export class PreviewRenderer implements FrameRenderer {
       }
       drawables.push(drawable);
     }
-    this.draw(time, drawables);
+    this.draw(project, time, drawables);
   }
 
   startPlayback(): void {
@@ -128,11 +140,11 @@ export class PreviewRenderer implements FrameRenderer {
     this.disposeStreams();
   }
 
-  private async loadStill(asset: Asset | undefined, layer: Layer): Promise<Drawable | null> {
+  private async loadStill(asset: Asset | undefined, layer: ClipLayer): Promise<Drawable | null> {
     if (asset?.type === 'image') {
       return {
         kind: 'image',
-        clipId: layer.clipId,
+        id: layer.clipId,
         bitmap: await this.sources.loadImage(asset.id),
       };
     }
@@ -140,16 +152,16 @@ export class PreviewRenderer implements FrameRenderer {
       const source = await this.sources.loadVideo(asset.id);
       const sample = await source.getSample(layer.sourceTime);
       return sample
-        ? { kind: 'video', clipId: layer.clipId, sample, frameTime: source.toSourceTime(sample) }
+        ? { kind: 'video', id: layer.clipId, sample, frameTime: source.toSourceTime(sample) }
         : null;
     }
     return null;
   }
 
-  private peekFrame(asset: Asset | undefined, layer: Layer): Drawable | null {
+  private peekFrame(asset: Asset | undefined, layer: ClipLayer): Drawable | null {
     if (asset?.type === 'image') {
       const bitmap = this.sources.peekImage(asset.id);
-      return bitmap ? { kind: 'image', clipId: layer.clipId, bitmap } : null;
+      return bitmap ? { kind: 'image', id: layer.clipId, bitmap } : null;
     }
     if (asset?.type === 'video') {
       const entry = this.streams.get(layer.clipId);
@@ -157,7 +169,7 @@ export class PreviewRenderer implements FrameRenderer {
       return entry && sample
         ? {
             kind: 'video',
-            clipId: layer.clipId,
+            id: layer.clipId,
             sample,
             frameTime: entry.source.toSourceTime(sample),
           }
@@ -176,7 +188,7 @@ export class PreviewRenderer implements FrameRenderer {
     const isVideo = (assetId: string) => assets.get(assetId)?.type === 'video';
     const wanted = new Map<string, Microseconds>();
     for (const layer of layers) {
-      if (isVideo(layer.assetId)) {
+      if (layer.kind === 'clip' && isVideo(layer.assetId)) {
         wanted.set(layer.clipId, layer.sourceTime);
       }
     }
@@ -215,7 +227,7 @@ export class PreviewRenderer implements FrameRenderer {
     }
   }
 
-  private draw(time: Microseconds, drawables: readonly Drawable[]): void {
+  private draw(project: Project, time: Microseconds, drawables: readonly Drawable[]): void {
     const canvas = this.canvas;
     if (!canvas) {
       return;
@@ -231,6 +243,9 @@ export class PreviewRenderer implements FrameRenderer {
     for (const drawable of drawables) {
       if (drawable.kind === 'video') {
         drawable.sample.drawWithFit(context, { fit: 'contain' });
+      } else if (drawable.kind === 'text') {
+        // 텍스트 좌표·크기는 출력 해상도 기준이므로 캔버스 크기에 맞게 축소한다
+        drawTextOverlay(context, drawable.overlay, canvas.width / project.width);
       } else {
         const rect = containRect(
           drawable.bitmap.width,
@@ -245,7 +260,7 @@ export class PreviewRenderer implements FrameRenderer {
     this.stats.lastDrawn = {
       time,
       frames: drawables.map((drawable) => ({
-        clipId: drawable.clipId,
+        id: drawable.id,
         frameTime: drawable.kind === 'video' ? drawable.frameTime : null,
       })),
     };
@@ -261,4 +276,8 @@ export class PreviewRenderer implements FrameRenderer {
 
 function indexAssets(project: Project): Map<string, Asset> {
   return new Map(project.assets.map((asset) => [asset.id, asset]));
+}
+
+function textDrawable(overlay: TextOverlay): Drawable {
+  return { kind: 'text', id: overlay.id, overlay };
 }

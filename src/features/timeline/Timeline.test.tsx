@@ -596,4 +596,70 @@ describe('Timeline', () => {
       fireEvent.pointerUp(element, { pointerId: 5, clientX: 100, clientY: 80 });
     });
   });
+
+  describe('텍스트', () => {
+    function textItem() {
+      return screen.getByRole('listitem', { name: '텍스트 텍스트' });
+    }
+
+    it('텍스트 버튼은 플레이헤드 위치에 텍스트 트랙과 텍스트를 만들고 선택한다', () => {
+      // 빈 프로젝트는 길이가 0이라 탐색할 수 없으므로 클립을 먼저 놓는다
+      dragAssetToTrack('intro.mp4', 0);
+      fireEvent.pointerDown(screen.getByTestId('timeline-content'), { button: 0, clientX: 100 });
+
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+
+      const { project } = projectStore.getState();
+      expect(project.overlays[0]).toMatchObject({ start: 2_000_000, duration: 3_000_000 });
+      expect(project.tracks.at(-1)?.kind).toBe('text');
+      const trackNames = screen.getAllByRole('list', { name: /^트랙/ }).map((el) => el.ariaLabel);
+      expect(trackNames).toEqual(['트랙 T1', '트랙 V1']);
+      expect(textItem()).toHaveAttribute('data-selected', 'true');
+    });
+
+    it('타임라인에서 텍스트를 옮기고 트리밍한다', () => {
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+      const element = textItem();
+
+      // T1(56~112) 안에서 오른쪽으로 2초
+      fireEvent.pointerDown(element, { button: 0, pointerId: 7, clientX: 50, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 7, clientX: 150, clientY: 80 });
+      fireEvent.pointerUp(element, { pointerId: 7, clientX: 150, clientY: 80 });
+      expect(projectStore.getState().project.overlays[0]?.start).toBe(2_000_000);
+
+      const handle = screen.getByRole('separator', { name: '텍스트 끝 지점 트리밍' });
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 8, clientX: 250, clientY: 80 });
+      fireEvent.pointerMove(handle, { pointerId: 8, clientX: 500, clientY: 80 });
+      fireEvent.pointerUp(handle, { pointerId: 8, clientX: 500, clientY: 80 });
+      expect(projectStore.getState().project.overlays[0]?.duration).toBe(8_000_000);
+    });
+
+    it('텍스트를 비디오 트랙으로 끌어도 텍스트 트랙에 남는다', () => {
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+      const element = textItem();
+      const textTrackId = projectStore.getState().project.overlays[0]?.trackId;
+
+      // V1(112~168)으로 끌기
+      fireEvent.pointerDown(element, { button: 0, pointerId: 9, clientX: 50, clientY: 80 });
+      fireEvent.pointerMove(element, { pointerId: 9, clientX: 100, clientY: 140 });
+      fireEvent.pointerUp(element, { pointerId: 9, clientX: 100, clientY: 140 });
+
+      expect(projectStore.getState().project.overlays[0]).toMatchObject({
+        trackId: textTrackId,
+        start: 1_000_000,
+      });
+    });
+
+    it('텍스트 트랙에는 에셋을 놓을 수 없다', () => {
+      fireEvent.click(screen.getByRole('button', { name: '텍스트' }));
+      const dataTransfer = createDataTransfer();
+      const textTrack = screen.getByRole('list', { name: '트랙 T1' });
+
+      fireEvent.dragStart(screen.getByRole('listitem', { name: 'intro.mp4' }), { dataTransfer });
+      fireEvent.dragOver(textTrack, { dataTransfer, clientX: 400 });
+      fireEvent.drop(textTrack, { dataTransfer, clientX: 400 });
+
+      expect(projectStore.getState().project.clips).toEqual([]);
+    });
+  });
 });
