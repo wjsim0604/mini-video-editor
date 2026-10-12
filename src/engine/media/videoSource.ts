@@ -25,6 +25,9 @@ export interface VideoSource {
 }
 
 export async function openVideoSource(file: Blob): Promise<VideoSource> {
+  if (typeof VideoDecoder === 'undefined') {
+    throw new UnsupportedMediaError('이 브라우저는 영상 디코딩(WebCodecs)을 지원하지 않습니다');
+  }
   // 디먹서·디코더 코드는 용량이 커서 첫 화면 번들에서 분리하고, 처음 영상을 열 때 불러온다
   const { BlobSource, Input, MATROSKA, MP4, QTFF, VideoSampleSink, WEBM } =
     await import('mediabunny');

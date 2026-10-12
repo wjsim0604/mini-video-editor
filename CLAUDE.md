@@ -19,7 +19,7 @@
 - 디먹싱/디코딩 관리: mediabunny (MPL-2.0, 수정 없이 의존성으로 사용). 시간 단위가 초이므로 `engine/media/videoSource.ts` 경계에서 μs로 변환
   - 용량이 커서 동적 import로 첫 화면 번들에서 분리, 영상 컨테이너(MP4·MOV·WebM·MKV)만 등록
 - mp4 먹싱·인코딩: mediabunny (`Output` + `Mp4OutputFormat` + `CanvasSource`). 코덱은 H.264 → VP9 → AV1 중 인코딩 가능한 첫 코덱, 영상만(소리 없음)
-- WebCodecs 미지원 브라우저 대응: ffmpeg.wasm (멀티스레드 사용 시 COOP/COEP 헤더 필요)
+- WebCodecs 미지원 브라우저 대응: 기능 감지 + 안내 메시지 (`engine/capabilities.ts`, `features/compat/`). ffmpeg.wasm은 쓰지 않는다: 프리뷰 디코딩도 WebCodecs에 의존해 내보내기만 대체해서는 편집할 수 없고, 약 30MB wasm과 COOP/COEP 헤더가 필요하다
 - 로컬 저장: IndexedDB (idb 라이브러리)
 - 테스트: Vitest + Testing Library (핵심 로직), 필요 시 Playwright
 - 품질: ESLint + Prettier
@@ -170,7 +170,7 @@ docs/
 ### 4주차 — 내보내기와 마무리
 
 - [x] WebCodecs로 mp4 내보내기, 진행률 표시, 취소
-- [ ] 미지원 브라우저 대응(ffmpeg.wasm) 또는 안내 메시지
+- [x] 미지원 브라우저 대응(ffmpeg.wasm) 또는 안내 메시지
 - [ ] Vercel 배포
 - [ ] README 정리: 데모 GIF, 아키텍처 다이어그램, 기술적 의사결정, 실행 방법
 

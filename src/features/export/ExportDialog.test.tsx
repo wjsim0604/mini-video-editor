@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import { createAddClipCommand } from '@/core/commands/addClip.ts';
 import { DEFAULT_VIDEO_TRACK_ID } from '@/core/project.ts';
+import type * as CodecModule from '@/engine/export/codec.ts';
 import type * as ExportModule from '@/engine/export/exportVideo.ts';
 import type { ExportOptions, ExportResult } from '@/engine/export/exportVideo.ts';
 import { exportVideo, ExportUnsupportedError } from '@/engine/export/exportVideo.ts';
@@ -14,6 +15,12 @@ import { exportStore } from './exportStore.ts';
 vi.mock('@/engine/export/exportVideo.ts', async (importOriginal) => {
   const original = await importOriginal<typeof ExportModule>();
   return { ...original, exportVideo: vi.fn() };
+});
+
+// jsdom에는 WebCodecs가 없으므로 내보내기 가능 여부 확인은 지원되는 것으로 둔다
+vi.mock('@/engine/export/codec.ts', async (importOriginal) => {
+  const original = await importOriginal<typeof CodecModule>();
+  return { ...original, checkExportSupport: () => Promise.resolve(true) };
 });
 
 const exportVideoMock = vi.mocked(exportVideo);
@@ -171,5 +178,18 @@ describe('내보내기', () => {
     );
 
     expect(screen.getByRole('dialog', { name: '내보내기 실패' })).toHaveTextContent('WebCodecs');
+  });
+
+  it('인코딩을 지원하지 않는 브라우저에서는 버튼을 끄고 이유를 알려준다', async () => {
+    addClip();
+    const codec = await import('@/engine/export/codec.ts');
+    vi.spyOn(codec, 'checkExportSupport').mockResolvedValue(false);
+    renderUi();
+
+    const button = screen.getByRole('button', { name: '내보내기' });
+    await vi.waitFor(() => {
+      expect(button).toBeDisabled();
+    });
+    expect(button).toHaveAttribute('title', expect.stringContaining('WebCodecs'));
   });
 });

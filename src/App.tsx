@@ -1,6 +1,7 @@
 import { Profiler } from 'react';
 import { onTimelineRender } from '@/devtools/profiler.ts';
 import { AssetPanel } from '@/features/assets/AssetPanel.tsx';
+import { CompatibilityBanner } from '@/features/compat/CompatibilityBanner.tsx';
 import { ExportButton } from '@/features/export/ExportButton.tsx';
 import { ExportDialog } from '@/features/export/ExportDialog.tsx';
 import { useExportState } from '@/features/export/exportStore.ts';
@@ -31,6 +32,7 @@ function App() {
             <ExportButton />
           </div>
         </header>
+        <CompatibilityBanner />
         <main className="grid min-h-0 flex-1 grid-cols-[240px_1fr_240px] grid-rows-[1fr_240px]">
           <AssetPanel />
           <PreviewPanel />
