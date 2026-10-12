@@ -1,8 +1,11 @@
-import { clipEnd } from '@/core/clip.ts';
-import { usToPx } from '@/core/timeline/coords.ts';
+import type { PointerEvent } from 'react';
+import { projectDuration } from '@/core/composition.ts';
+import { pxToUs, usToPx } from '@/core/timeline/coords.ts';
 import { US_PER_SECOND } from '@/core/time.ts';
 import { useProjectStore } from '@/store/projectStore.ts';
 import { useTimelineStore } from '@/store/timelineStore.ts';
+import { playbackEngine } from '@/features/preview/playback.ts';
+import { Playhead } from './Playhead.tsx';
 import { TimeRuler } from './TimeRuler.tsx';
 import { TrackRow } from './TrackRow.tsx';
 
@@ -14,8 +17,16 @@ export function Timeline() {
   const pxPerSecond = useTimelineStore((state) => state.pxPerSecond);
 
   const tracks = [...project.tracks].sort((a, b) => a.order - b.order);
-  const contentEnd = project.clips.reduce((end, clip) => Math.max(end, clipEnd(clip)), 0);
-  const contentDuration = contentEnd + TRAILING_SPACE;
+  const contentDuration = projectDuration(project) + TRAILING_SPACE;
+
+  // 눈금이나 트랙을 클릭하면 그 시각으로 이동한다
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    playbackEngine.seek(pxToUs(event.clientX - rect.left, pxPerSecond));
+  };
 
   return (
     <section aria-label="타임라인" className="col-span-3 flex min-h-0 border-t border-neutral-800">
@@ -31,7 +42,12 @@ export function Timeline() {
         ))}
       </div>
       <div className="min-w-0 flex-1 overflow-x-auto">
-        <div className="min-w-full" style={{ width: usToPx(contentDuration, pxPerSecond) }}>
+        <div
+          data-testid="timeline-content"
+          className="relative min-w-full"
+          style={{ width: usToPx(contentDuration, pxPerSecond) }}
+          onPointerDown={handlePointerDown}
+        >
           <TimeRuler duration={contentDuration} pxPerSecond={pxPerSecond} />
           {tracks.map((track, index) => (
             <TrackRow
@@ -43,6 +59,7 @@ export function Timeline() {
               pxPerSecond={pxPerSecond}
             />
           ))}
+          <Playhead pxPerSecond={pxPerSecond} />
         </div>
       </div>
     </section>

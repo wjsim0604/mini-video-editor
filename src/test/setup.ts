@@ -16,6 +16,10 @@ if (!('DragEvent' in window)) {
   Object.defineProperty(window, 'DragEvent', { value: DragEventPolyfill, configurable: true });
 }
 
+// jsdom은 Canvas를 구현하지 않아 getContext 호출 시 "Not implemented" 오류를 출력한다.
+// 렌더러는 컨텍스트가 없으면 그리기를 건너뛰므로 null을 반환하도록 고정한다.
+HTMLCanvasElement.prototype.getContext = () => null;
+
 afterEach(() => {
   cleanup();
 });

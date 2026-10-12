@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createAddAssetCommand } from '@/core/commands/addAsset.ts';
 import type { Asset } from '@/core/project.ts';
 import { AssetPanel } from '@/features/assets/AssetPanel.tsx';
+import { playbackEngine } from '@/features/preview/playback.ts';
 import { mediaStore } from '@/store/mediaStore.ts';
+import { playbackStore } from '@/store/playbackStore.ts';
 import { projectStore } from '@/store/projectStore.ts';
 import { timelineStore } from '@/store/timelineStore.ts';
 import { Timeline } from './Timeline.tsx';
@@ -50,6 +52,7 @@ describe('Timeline', () => {
     projectStore.setState(projectStore.getInitialState(), true);
     mediaStore.setState(mediaStore.getInitialState(), true);
     timelineStore.setState(timelineStore.getInitialState(), true);
+    playbackEngine.seek(0);
     projectStore.getState().dispatch(createAddAssetCommand(intro));
     projectStore.getState().dispatch(createAddAssetCommand(outro));
     render(
@@ -115,5 +118,28 @@ describe('Timeline', () => {
     fireEvent.drop(track, { dataTransfer: createDataTransfer(), clientX: 0 });
 
     expect(projectStore.getState().project.clips).toEqual([]);
+  });
+
+  it('타임라인을 클릭하면 그 시각으로 이동하고 플레이헤드가 따라온다', () => {
+    dragAssetToTrack('intro.mp4', 0);
+
+    fireEvent.pointerDown(screen.getByTestId('timeline-content'), {
+      button: 0,
+      clientX: 2 * PX_PER_SECOND,
+    });
+
+    expect(playbackStore.getState().currentTime).toBe(2_000_000);
+    expect(screen.getByTestId('playhead')).toHaveStyle({ transform: 'translateX(100px)' });
+  });
+
+  it('프로젝트 끝보다 뒤를 클릭하면 끝으로 이동한다', () => {
+    dragAssetToTrack('intro.mp4', 0);
+
+    fireEvent.pointerDown(screen.getByTestId('timeline-content'), {
+      button: 0,
+      clientX: 20 * PX_PER_SECOND,
+    });
+
+    expect(playbackStore.getState().currentTime).toBe(4_000_000);
   });
 });

@@ -16,7 +16,9 @@
 - 스타일: Tailwind CSS
 - 프리뷰 렌더링: Canvas 2D (`<video>` 태그를 화면에 직접 쓰지 않고 프레임을 캔버스에 그림)
 - 디코딩/인코딩: WebCodecs API
-- mp4 먹싱 라이브러리는 최신 유지보수 상태를 확인한 뒤 제안하고 승인 받기
+- 디먹싱/디코딩 관리: mediabunny (MPL-2.0, 수정 없이 의존성으로 사용). 시간 단위가 초이므로 `engine/media/videoSource.ts` 경계에서 μs로 변환
+  - 용량이 커서 동적 import로 첫 화면 번들에서 분리, 영상 컨테이너(MP4·MOV·WebM·MKV)만 등록
+- mp4 먹싱: mediabunny 사용 예정 (4주차 내보내기에서 최종 확인 받기)
 - WebCodecs 미지원 브라우저 대응: ffmpeg.wasm (멀티스레드 사용 시 COOP/COEP 헤더 필요)
 - 로컬 저장: IndexedDB (idb 라이브러리)
 - 테스트: Vitest + Testing Library (핵심 로직), 필요 시 Playwright
@@ -27,6 +29,9 @@
 
 - **시간 단위 통일**: 내부 시간은 마이크로초 정수(WebCodecs timestamp와 동일). 화면 표시할 때만 변환한다. 부동소수점 초 단위 계산 금지.
 - **데이터 모델이 단일 진실 공급원**: 프리뷰와 타임라인은 모두 `Project` 상태에서 파생된다. 프리뷰는 `render(project, time)` 형태의 순수 함수로 설계한다.
+  - "무엇을 그릴지"는 `core/composition.ts`의 `resolveLayers(project, time)`(순수 함수), "어떻게 그릴지"(디코딩·캔버스)는 `engine/render/PreviewRenderer`가 담당
+  - 재생 시계와 rAF 루프는 `engine/playback/PlaybackEngine`(시계·rAF·렌더러 주입, React 무관). store와의 연결은 `features/preview/playback.ts`에서만 한다
+  - 재생 중 매 프레임 바뀌는 `currentTime`은 React 훅으로 구독하지 않고 `playbackStore.subscribe`로 DOM을 직접 갱신한다
 - **모든 편집은 커맨드로**: 상태를 바꾸는 편집 동작은 반드시 커맨드를 `projectStore.dispatch(command)`로 실행한다. 컴포넌트에서 store를 직접 수정하지 않는다. (undo/redo 구현의 기반)
   - 커맨드는 Project를 받아 새 Project를 반환하는 순수 함수: `Command { label; execute(project): Project; undo(project): Project }` (`core/commands/`)
   - React·Zustand 없이 테스트할 수 있고, Zustand의 불변 업데이트와 맞물린다
@@ -113,7 +118,7 @@ docs/
 - [x] 프로젝트 세팅 (Vite, TS strict, ESLint/Prettier, Tailwind, Vitest)
 - [x] 영상·이미지 업로드 → 에셋 패널에 표시 (썸네일, 길이)
 - [x] 에셋을 타임라인에 드래그해서 클립 배치
-- [ ] 재생/일시정지, 플레이헤드와 프리뷰 동기화, 타임라인 클릭으로 탐색
+- [x] 재생/일시정지, 플레이헤드와 프리뷰 동기화, 타임라인 클릭으로 탐색
 
 **완료 기준**: 클립 2개 이상을 순서대로 이어서 끊김 없이 재생할 수 있다
 
