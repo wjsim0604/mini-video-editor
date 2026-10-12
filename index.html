@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko" class="dark">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -10,6 +10,20 @@
     />
     <meta name="theme-color" content="#0a0a0a" />
     <title>Mini Video Editor</title>
+    <script>
+      // 첫 화면이 그려지기 전에 테마를 정한다 (깜빡임 방지). 키·규칙은 src/features/theme/theme.ts와 같다
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem('mini-video-editor:theme');
+        } catch (e) {}
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -42,7 +42,7 @@ export function AssetItem({ asset }: AssetItemProps) {
           />
         )}
         {asset.type === 'video' && (
-          <span className="absolute right-0.5 bottom-0.5 rounded bg-black/70 px-1 text-[10px] tabular-nums">
+          <span className="absolute right-0.5 bottom-0.5 rounded bg-black/70 px-1 text-[10px] text-white tabular-nums">
             {formatDuration(asset.duration)}
           </span>
         )}
