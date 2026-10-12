@@ -23,7 +23,7 @@
 - 로컬 저장: IndexedDB (idb 라이브러리)
 - 테스트: Vitest + Testing Library (핵심 로직), 필요 시 Playwright
 - 품질: ESLint + Prettier
-- 배포: Vercel
+- 배포: Vercel (`vercel.json`: Vite 프리셋, `/assets/*` 장기 캐시, 보안 헤더) + GitHub Actions CI(typecheck·lint·format·test·build)
 
 ## 핵심 설계 원칙
 
@@ -171,7 +171,7 @@ docs/
 
 - [x] WebCodecs로 mp4 내보내기, 진행률 표시, 취소
 - [x] 미지원 브라우저 대응(ffmpeg.wasm) 또는 안내 메시지
-- [ ] Vercel 배포
+- [x] Vercel 배포 (설정·CI 준비 완료, Vercel에서 저장소 Import만 하면 배포됨)
 - [ ] README 정리: 데모 GIF, 아키텍처 다이어그램, 기술적 의사결정, 실행 방법
 
 **완료 기준**: 30초 분량 프로젝트를 1080p mp4로 내보낼 수 있다
