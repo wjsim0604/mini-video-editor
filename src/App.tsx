@@ -1,4 +1,5 @@
 import { AssetPanel } from '@/features/assets/AssetPanel.tsx';
+import { Timeline } from '@/features/timeline/Timeline.tsx';
 
 function App() {
   return (
@@ -10,7 +11,7 @@ function App() {
         <AssetPanel />
         <section aria-label="프리뷰" className="bg-black" />
         <section aria-label="인스펙터" className="border-l border-neutral-800" />
-        <section aria-label="타임라인" className="col-span-3 border-t border-neutral-800" />
+        <Timeline />
       </main>
     </div>
   );

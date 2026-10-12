@@ -1,6 +1,8 @@
 import type { Asset } from '@/core/project.ts';
 import { formatDuration } from '@/core/time.ts';
 import { useMediaStore } from '@/store/mediaStore.ts';
+import { ASSET_DRAG_TYPE, timelineStore } from '@/store/timelineStore.ts';
+import type { DragEvent } from 'react';
 
 interface AssetItemProps {
   asset: Asset;
@@ -9,8 +11,24 @@ interface AssetItemProps {
 export function AssetItem({ asset }: AssetItemProps) {
   const thumbnailUrl = useMediaStore((state) => state.entries[asset.id]?.thumbnailUrl);
 
+  const handleDragStart = (event: DragEvent) => {
+    event.dataTransfer.setData(ASSET_DRAG_TYPE, asset.id);
+    event.dataTransfer.effectAllowed = 'copy';
+    timelineStore.getState().setDraggingAssetId(asset.id);
+  };
+
+  const handleDragEnd = () => {
+    timelineStore.getState().setDraggingAssetId(null);
+  };
+
   return (
-    <li className="flex items-center gap-2 rounded p-1.5 hover:bg-neutral-800">
+    <li
+      draggable
+      aria-label={asset.name}
+      className="flex cursor-grab items-center gap-2 rounded p-1.5 hover:bg-neutral-800 active:cursor-grabbing"
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="relative aspect-video w-20 shrink-0 overflow-hidden rounded bg-black">
         {thumbnailUrl && (
           <img

@@ -51,6 +51,8 @@ export const DEFAULT_PROJECT_WIDTH = 1920;
 export const DEFAULT_PROJECT_HEIGHT = 1080;
 export const DEFAULT_PROJECT_FPS = 30;
 
+export const DEFAULT_VIDEO_TRACK_ID = 'track-video-1';
+
 export function createEmptyProject(id: string, name: string): Project {
   return {
     id,
@@ -58,7 +60,7 @@ export function createEmptyProject(id: string, name: string): Project {
     width: DEFAULT_PROJECT_WIDTH,
     height: DEFAULT_PROJECT_HEIGHT,
     fps: DEFAULT_PROJECT_FPS,
-    tracks: [],
+    tracks: [{ id: DEFAULT_VIDEO_TRACK_ID, kind: 'video', order: 0 }],
     clips: [],
     overlays: [],
     assets: [],
